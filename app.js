@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.1.12";
+  const APP_VERSION = "1.1.13";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -111,6 +111,11 @@
     if (supabaseStorageKey) localStorage.removeItem(supabaseStorageKey);
   }
 
+  function resetCloudClient() {
+    supabaseClient = null;
+    clearSupabaseAuthStorage();
+  }
+
   function withTimeout(promise, ms, message) {
     let timer = null;
     const timeout = new Promise((_resolve, reject) => {
@@ -126,10 +131,10 @@
     try {
       const response = await fetch(cloudAuthHealthUrl(), {
         cache: "no-store",
-        mode: "no-cors",
+        headers: { apikey: cloudConfig.anonKey },
         signal: controller.signal,
       });
-      return response.ok || response.status < 500;
+      return response.ok || (response.status > 0 && response.status < 500);
     } catch (_error) {
       return false;
     } finally {
@@ -360,6 +365,7 @@
   }
 
   async function signInWithGoogle() {
+    resetCloudClient();
     const client = await prepareCloudClient({ force: true, timeoutMs: 2200 });
     if (!client) {
       render();
@@ -382,7 +388,9 @@
       if (!error) return;
       cloudStatus = "Sign in failed";
     } catch (_error) {
-      markCloudUnavailable();
+      resetCloudClient();
+      cloudStatus = (await isCloudReachable(2200)) ? "Browser storage only" : "Cloud unavailable";
+      cloudUnavailable = cloudStatus === "Cloud unavailable";
     } finally {
       render();
     }
@@ -571,7 +579,11 @@
         }
       });
     } catch (_error) {
-      markCloudUnavailable();
+      resetCloudClient();
+      authSession = null;
+      authReady = true;
+      cloudStatus = (await isCloudReachable(2200)) ? "Browser storage only" : "Cloud unavailable";
+      cloudUnavailable = cloudStatus === "Cloud unavailable";
       render();
     }
   }

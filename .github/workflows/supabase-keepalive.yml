@@ -1,0 +1,16 @@
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: "23 13 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keep Workout Planner Supabase project awake
+        run: |
+          curl --fail --silent --show-error \
+            -H "apikey: sb_publishable_rlVMGLEUpG1IrZxZG_U8Rw_tP6AGx2U" \
+            "https://onigxkpzvjlzmmdkwdrc.supabase.co/auth/v1/health"
