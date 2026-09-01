@@ -591,6 +591,11 @@ button {
   cursor: pointer;
 }
 
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .btn-primary {
   background: var(--blue);
   color: #081018;

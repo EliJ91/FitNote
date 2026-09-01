@@ -4,9 +4,11 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.1.11";
+  const APP_VERSION = "1.1.12";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
+  const AUTH_CHECK_TIMEOUT_MS = 1200;
+  const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
   const PLATE_DENOMINATIONS = [45, 35, 25, 10, 5, 2.5];
   const DEFAULT_WEIGHT_OFFSET = "45";
@@ -40,16 +42,10 @@
   const importFile = document.getElementById("import-file");
   const toast = document.getElementById("toast");
   const cloudConfig = window.WORKOUT_SUPABASE || {};
-  const supabaseClient =
-    window.supabase && cloudConfig.url && cloudConfig.anonKey
-      ? window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
-          auth: {
-            autoRefreshToken: true,
-            detectSessionInUrl: true,
-            persistSession: true,
-          },
-        })
-      : null;
+  const canAttemptCloud = Boolean(window.supabase && cloudConfig.url && cloudConfig.anonKey);
+  const cloudProjectRef = projectRefFromUrl(cloudConfig.url);
+  const supabaseStorageKey = cloudProjectRef ? `sb-${cloudProjectRef}-auth-token` : "";
+  let supabaseClient = null;
 
   let authSession = null;
   let state = loadState();
@@ -57,10 +53,11 @@
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true";
-  let authReady = !supabaseClient;
+  let authReady = true;
   let cloudSaveTimer = null;
   let cloudLoadActive = false;
-  let cloudStatus = supabaseClient ? "Cloud ready" : "Local only";
+  let cloudStatus = canAttemptCloud ? "Browser storage only" : "Local only";
+  let cloudUnavailable = !canAttemptCloud;
   let cloudDatabaseFull = false;
   let selectedHistory = new Set();
   let dataSelection = {
@@ -86,6 +83,94 @@
 
   function escapeAttr(value) {
     return escapeHtml(value).replace(/\n/g, "&#10;");
+  }
+
+  function projectRefFromUrl(url) {
+    try {
+      return new URL(url).hostname.split(".")[0] || "";
+    } catch (_error) {
+      return "";
+    }
+  }
+
+  function cloudAuthHealthUrl() {
+    return `${String(cloudConfig.url || "").replace(/\/$/, "")}/auth/v1/health`;
+  }
+
+  function hasAuthRedirectParams() {
+    const text = `${window.location.search} ${window.location.hash}`;
+    return /access_token|refresh_token|code=|error=/.test(text);
+  }
+
+  function hasStoredSupabaseSession() {
+    if (supabaseStorageKey && localStorage.getItem(supabaseStorageKey)) return true;
+    return false;
+  }
+
+  function clearSupabaseAuthStorage() {
+    if (supabaseStorageKey) localStorage.removeItem(supabaseStorageKey);
+  }
+
+  function withTimeout(promise, ms, message) {
+    let timer = null;
+    const timeout = new Promise((_resolve, reject) => {
+      timer = window.setTimeout(() => reject(new Error(message)), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => window.clearTimeout(timer));
+  }
+
+  async function isCloudReachable(timeoutMs = AUTH_CHECK_TIMEOUT_MS) {
+    if (!canAttemptCloud) return false;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(cloudAuthHealthUrl(), {
+        cache: "no-store",
+        mode: "no-cors",
+        signal: controller.signal,
+      });
+      return response.ok || response.status < 500;
+    } catch (_error) {
+      return false;
+    } finally {
+      window.clearTimeout(timer);
+    }
+  }
+
+  function markCloudUnavailable() {
+    cloudUnavailable = true;
+    authSession = null;
+    authReady = true;
+    cloudStatus = "Cloud unavailable";
+    clearSupabaseAuthStorage();
+    window.clearTimeout(cloudSaveTimer);
+  }
+
+  async function prepareCloudClient({ force = false, timeoutMs = AUTH_CHECK_TIMEOUT_MS } = {}) {
+    if (supabaseClient) return supabaseClient;
+    if (!canAttemptCloud) return null;
+    if (cloudUnavailable && !force) return null;
+    cloudUnavailable = false;
+    cloudStatus = "Checking cloud...";
+    updateMenuStatus();
+    if (!(await isCloudReachable(timeoutMs))) {
+      markCloudUnavailable();
+      return null;
+    }
+    try {
+      supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
+        auth: {
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          persistSession: true,
+          storageKey: supabaseStorageKey || undefined,
+        },
+      });
+      return supabaseClient;
+    } catch (_error) {
+      markCloudUnavailable();
+      return null;
+    }
   }
 
   function iconSvg(name) {
@@ -275,23 +360,33 @@
   }
 
   async function signInWithGoogle() {
-    if (!supabaseClient) {
-      showToast("Cloud sync is not configured.");
+    const client = await prepareCloudClient({ force: true, timeoutMs: 2200 });
+    if (!client) {
+      render();
+      showToast(canAttemptCloud ? "Google sign in is unavailable right now." : "Cloud sync is not configured.");
       return;
     }
     guestMode = false;
     localStorage.removeItem(GUEST_MODE_KEY);
     cloudStatus = "Opening Google...";
     updateMenuStatus();
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: authRedirectUrl() },
-    });
-    if (error) {
+    try {
+      const { error } = await withTimeout(
+        client.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: authRedirectUrl() },
+        }),
+        AUTH_CHECK_TIMEOUT_MS,
+        "Google sign in timed out"
+      );
+      if (!error) return;
       cloudStatus = "Sign in failed";
-      updateMenuStatus();
-      showToast("Google sign in failed.");
+    } catch (_error) {
+      markCloudUnavailable();
+    } finally {
+      render();
     }
+    showToast("Google sign in failed.");
   }
 
   function enterGuestMode() {
@@ -312,7 +407,7 @@
   }
 
   function cloudMenu() {
-    if (!supabaseClient) {
+    if (!canAttemptCloud || cloudUnavailable) {
       return '<button class="menu-item menu-status" type="button" disabled>Cloud sync unavailable</button>';
     }
     if (!authSession) {
@@ -343,7 +438,7 @@
   }
 
   function queueCloudSave() {
-    if (!supabaseClient || !authSession || cloudLoadActive || cloudDatabaseFull) return;
+    if (!supabaseClient || !authSession || cloudLoadActive || cloudDatabaseFull || cloudUnavailable) return;
     window.clearTimeout(cloudSaveTimer);
     cloudSaveTimer = window.setTimeout(() => saveCloudData({ quiet: true }), 650);
   }
@@ -358,12 +453,16 @@
     cloudStatus = "Syncing...";
     try {
       const payload = normalizeData(state);
-      const { error } = await supabaseClient.from(SUPABASE_TABLE).upsert(
-        {
-          user_id: authSession.user.id,
-          payload,
-        },
-        { onConflict: "user_id" }
+      const { error } = await withTimeout(
+        supabaseClient.from(SUPABASE_TABLE).upsert(
+          {
+            user_id: authSession.user.id,
+            payload,
+          },
+          { onConflict: "user_id" }
+        ),
+        CLOUD_REQUEST_TIMEOUT_MS,
+        "Cloud save timed out"
       );
       if (error) throw error;
       cloudStatus = "Synced";
@@ -375,7 +474,11 @@
         showToast("Database is full. Saved on this device only.");
         return { ok: false, databaseFull: true };
       }
-      cloudStatus = "Cloud sync failed";
+      if (/failed to fetch|network|timed out|abort/i.test(String(error?.message || error))) {
+        markCloudUnavailable();
+      } else {
+        cloudStatus = "Cloud sync failed";
+      }
       if (!quiet) showToast("Saved on this device. Cloud sync failed.");
       return { ok: false, error };
     } finally {
@@ -389,11 +492,11 @@
     cloudStatus = "Loading cloud...";
     updateMenuStatus();
     try {
-      const { data, error } = await supabaseClient
-        .from(SUPABASE_TABLE)
-        .select("payload")
-        .eq("user_id", authSession.user.id)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        supabaseClient.from(SUPABASE_TABLE).select("payload").eq("user_id", authSession.user.id).maybeSingle(),
+        CLOUD_REQUEST_TIMEOUT_MS,
+        "Cloud load timed out"
+      );
       if (error) throw error;
       if (data?.payload) {
         applyLoadedState(data.payload);
@@ -410,6 +513,7 @@
     } catch (error) {
       cloudStatus = isDatabaseFullError(error) ? "Database full" : "Cloud sync failed";
       if (isDatabaseFullError(error)) cloudDatabaseFull = true;
+      if (/failed to fetch|network|timed out|abort/i.test(String(error?.message || error))) markCloudUnavailable();
       showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : "Cloud data unavailable.");
     } finally {
       cloudLoadActive = false;
@@ -427,9 +531,18 @@
   }
 
   async function initCloudAuth() {
-    if (!supabaseClient) return;
+    if (!canAttemptCloud || (!hasStoredSupabaseSession() && !hasAuthRedirectParams())) {
+      authReady = true;
+      render();
+      return;
+    }
+    const client = await prepareCloudClient({ timeoutMs: AUTH_CHECK_TIMEOUT_MS });
+    if (!client) {
+      render();
+      return;
+    }
     try {
-      const { data } = await supabaseClient.auth.getSession();
+      const { data } = await withTimeout(client.auth.getSession(), AUTH_CHECK_TIMEOUT_MS, "Auth check timed out");
       authSession = data.session;
       authReady = true;
       if (authSession) {
@@ -441,7 +554,7 @@
         cloudStatus = "Browser storage only";
         render();
       }
-      supabaseClient.auth.onAuthStateChange((_event, session) => {
+      client.auth.onAuthStateChange((_event, session) => {
         authSession = session;
         authReady = true;
         cloudDatabaseFull = false;
@@ -458,7 +571,7 @@
         }
       });
     } catch (_error) {
-      cloudStatus = "Cloud sync failed";
+      markCloudUnavailable();
       render();
     }
   }
@@ -590,10 +703,10 @@
         <img class="auth-logo" src="icons/icon.svg" alt="">
         <h1>Workout Planner</h1>
         <div class="auth-actions">
-          <button class="btn btn-primary" type="button" data-action="sign-in-google">Sign in with Google</button>
+          <button class="btn btn-primary" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}>Sign in with Google</button>
           <button class="btn btn-secondary" type="button" data-action="guest-sign-in">Continue as Guest</button>
         </div>
-        <p class="auth-copy">Cloud storage requires Google sign in.</p>
+        <p class="auth-copy">${cloudUnavailable ? "Cloud sign in is unavailable. Guest mode still works." : "Cloud storage requires Google sign in."}</p>
         <p class="auth-version">Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `);
