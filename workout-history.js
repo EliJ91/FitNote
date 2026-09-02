@@ -1,0 +1,590 @@
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) {
+    module.exports = factory();
+  } else {
+    root.WorkoutHistory = factory();
+  }
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  const HISTORY_SCHEMA_VERSION = 2;
+  const DEFAULT_WEIGHT_OFFSET = "45";
+  const NEW_EXERCISE_OFFSET = "0";
+
+  function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+  }
+
+  function todayIso(now = new Date()) {
+    return now.toISOString().slice(0, 10);
+  }
+
+  function nowIso(now = new Date()) {
+    return now.toISOString();
+  }
+
+  function hashParts(parts) {
+    const text = parts.map((part) => String(part ?? "")).join("\u001f");
+    let hash = 2166136261;
+    for (let index = 0; index < text.length; index += 1) {
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+  }
+
+  function stableId(prefix, ...parts) {
+    return `${prefix}_${hashParts(parts)}`;
+  }
+
+  function randomId(prefix) {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return `${prefix}_${crypto.randomUUID()}`;
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  }
+
+  function boolFromData(value) {
+    if (typeof value === "string") return ["1", "true", "yes", "on"].includes(value.trim().toLowerCase());
+    return Boolean(value);
+  }
+
+  function formatWeight(value) {
+    if (value === "" || value === null || value === undefined) return "";
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return String(value);
+    const rounded = Math.round(parsed * 10) / 10;
+    return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  }
+
+  function cleanText(value, fallback = "") {
+    const text = String(value ?? "").trim();
+    return text || fallback;
+  }
+
+  function normalizeExerciseRow(row = {}) {
+    const weight = row.weight ?? row.target_weight ?? "";
+    return {
+      exercise: cleanText(row.exercise, "New Exercise"),
+      weight: weight === "" ? "" : formatWeight(weight),
+      reps: String(row.reps ?? row.target_reps ?? "").trim(),
+      weight_offset: String(row.weight_offset ?? DEFAULT_WEIGHT_OFFSET),
+      track_pb: boolFromData(row.track_pb),
+      active: row.active === undefined ? true : boolFromData(row.active),
+    };
+  }
+
+  function parseSetScheme(repsValue) {
+    const original = String(repsValue ?? "").trim();
+    if (!original) return [{ reps: "", legacy_reps: original }];
+    const text = original.toLowerCase().replace(/\u00d7/g, "x").replace(/[\u2013\u2014]/g, "-");
+    const match = text.match(/^(\d+)\s*x\s*(.+)$/);
+    if (match) {
+      const count = Math.max(1, Number(match[1]) || 1);
+      const reps = match[2].trim();
+      return Array.from({ length: count }, () => ({ reps, legacy_reps: original }));
+    }
+    return [{ reps: original, legacy_reps: original }];
+  }
+
+  function setSort(a, b) {
+    return Number(a.set_number || 0) - Number(b.set_number || 0);
+  }
+
+  function sessionSortDesc(a, b) {
+    const left = String(a.completed_at || a.started_at || "");
+    const right = String(b.completed_at || b.started_at || "");
+    return right.localeCompare(left);
+  }
+
+  function routinesFromLegacy(data) {
+    const groups = data.groups || data.routines || {};
+    const routines = {};
+    Object.entries(groups).forEach(([name, rows]) => {
+      routines[name] = Array.isArray(rows) ? rows.map(normalizeExerciseRow) : [];
+    });
+    return routines;
+  }
+
+  function logsFromLegacySets(data, existingKeys = new Set()) {
+    const byKey = new Map();
+    (data.sets || []).forEach((item, index) => {
+      const routine = cleanText(item.routine || item.exercise_group, "Imported");
+      const logDate = cleanText(item.date, todayIso());
+      const key = `${logDate}::${routine}`;
+      if (existingKeys.has(key)) return;
+      if (!byKey.has(key)) byKey.set(key, { date: logDate, routine, exercises: [], pb_entries: [], legacy_source: "sets" });
+      byKey.get(key).exercises.push({ ...normalizeExerciseRow(item), legacy_set_index: index, legacy: clone(item) });
+    });
+    return Array.from(byKey.values());
+  }
+
+  function normalizeLegacyLogs(data) {
+    const logs = Array.isArray(data.routine_logs) ? data.routine_logs : [];
+    const normalized = logs.map((log) => ({
+      ...clone(log),
+      date: cleanText(log.date, todayIso()),
+      routine: cleanText(log.routine, "Workout"),
+      exercises: Array.isArray(log.exercises) ? log.exercises.map((row) => ({ ...clone(row), ...normalizeExerciseRow(row) })) : [],
+      pb_entries: Array.isArray(log.pb_entries) ? clone(log.pb_entries) : [],
+    }));
+    const existingKeys = new Set(normalized.map((log) => `${log.date}::${log.routine}`));
+    return normalized.concat(logsFromLegacySets(data, existingKeys));
+  }
+
+  function ensureExercise(data, row, metadata = {}) {
+    const name = cleanText(row.exercise || row.name, "Exercise");
+    const id = row.exercise_id || row.id || stableId("ex", name);
+    if (!data.exercises.some((exercise) => exercise.id === id)) {
+      data.exercises.push({
+        id,
+        name,
+        category: row.category || metadata.routine || "",
+        equipment: row.equipment || "",
+        active: row.active === undefined ? true : boolFromData(row.active),
+        legacy_names: [name],
+      });
+    }
+    return id;
+  }
+
+  function ensureRoutineDefinition(data, routineName, rows) {
+    const id = stableId("routine", routineName);
+    const existing = data.routine_definitions.find((routine) => routine.id === id);
+    const exercises = rows.map((row, index) => ({
+      exercise_id: ensureExercise(data, row, { routine: routineName }),
+      order: index + 1,
+      default_weight: row.weight,
+      default_reps: row.reps,
+      weight_offset: row.weight_offset,
+      active: row.active !== false,
+    }));
+    if (existing) {
+      existing.name = routineName;
+      existing.category = existing.category || routineName;
+      existing.exercises = exercises;
+      if (existing.active === undefined) existing.active = true;
+      return existing.id;
+    }
+    data.routine_definitions.push({ id, name: routineName, category: routineName, exercises, active: true });
+    return id;
+  }
+
+  function normalizeExistingV2(data) {
+    data.exercises = Array.isArray(data.exercises) ? data.exercises : [];
+    data.routine_definitions = Array.isArray(data.routine_definitions) ? data.routine_definitions : [];
+    data.workout_sessions = Array.isArray(data.workout_sessions) ? data.workout_sessions : [];
+    data.workout_exercises = Array.isArray(data.workout_exercises) ? data.workout_exercises : [];
+    data.workout_sets = Array.isArray(data.workout_sets) ? data.workout_sets : [];
+    data.migration_metadata = data.migration_metadata && typeof data.migration_metadata === "object" ? data.migration_metadata : {};
+  }
+
+  function addLegacySession(data, log, logIndex) {
+    const routineId = ensureRoutineDefinition(data, log.routine, data.routines?.[log.routine] || log.exercises || []);
+    const sessionId = log.session_id || stableId("session", "legacy-log", log.date, log.routine, logIndex);
+    if (!data.workout_sessions.some((session) => session.id === sessionId)) {
+      data.workout_sessions.push({
+        id: sessionId,
+        routine_id: routineId,
+        routine_name: log.routine,
+        started_at: `${log.date}T12:00:00.000Z`,
+        completed_at: `${log.date}T12:00:00.000Z`,
+        status: "completed",
+        notes: log.notes || "",
+        legacy_key: `${log.date}::${log.routine}::${logIndex}`,
+      });
+    }
+
+    (log.exercises || []).forEach((row, exerciseIndex) => {
+      const exerciseId = ensureExercise(data, row, { routine: log.routine });
+      const workoutExerciseId = row.workout_exercise_id || stableId("wex", sessionId, exerciseId, exerciseIndex);
+      if (!data.workout_exercises.some((exercise) => exercise.id === workoutExerciseId)) {
+        data.workout_exercises.push({
+          id: workoutExerciseId,
+          workout_session_id: sessionId,
+          exercise_id: exerciseId,
+          exercise_name: row.exercise,
+          order: exerciseIndex + 1,
+          weight_offset: row.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
+          track_pb: boolFromData(row.track_pb),
+          legacy: row.legacy || undefined,
+        });
+      }
+
+      const existingSetIds = new Set(data.workout_sets.map((set) => set.id));
+      const sourceSets = Array.isArray(row.sets) && row.sets.length ? row.sets : parseSetScheme(row.reps);
+      sourceSets.forEach((sourceSet, setIndex) => {
+        const setId = sourceSet.id || stableId("set", workoutExerciseId, setIndex + 1, row.weight, sourceSet.reps);
+        if (existingSetIds.has(setId)) return;
+        data.workout_sets.push({
+          id: setId,
+          workout_exercise_id: workoutExerciseId,
+          set_number: Number(sourceSet.set_number || setIndex + 1),
+          weight: formatWeight(sourceSet.weight ?? row.weight ?? ""),
+          reps: String(sourceSet.reps ?? "").trim(),
+          completed: sourceSet.completed === undefined ? true : boolFromData(sourceSet.completed),
+          timestamp: sourceSet.timestamp || `${log.date}T12:${String(setIndex).padStart(2, "0")}:00.000Z`,
+          legacy_source: Array.isArray(row.sets) ? "legacy_individual_set" : "legacy_summary",
+          legacy_reps: sourceSet.legacy_reps || row.reps || "",
+        });
+      });
+    });
+  }
+
+  function ensureHistoricalModel(input, options = {}) {
+    const data = input && typeof input === "object" ? clone(input) : {};
+    normalizeExistingV2(data);
+    data.history_version = HISTORY_SCHEMA_VERSION;
+    data.settings = data.settings && typeof data.settings === "object" ? data.settings : { always_on_top: false };
+    data.routines = Object.keys(data.routines || {}).length ? data.routines : routinesFromLegacy(data);
+    Object.keys(data.routines).forEach((name) => {
+      data.routines[name] = Array.isArray(data.routines[name]) ? data.routines[name].map(normalizeExerciseRow) : [];
+      if (!data.routines[name].length) data.routines[name] = [normalizeExerciseRow({ exercise: "New Exercise", weight_offset: NEW_EXERCISE_OFFSET })];
+      ensureRoutineDefinition(data, name, data.routines[name]);
+    });
+    data.selected_routine = data.routines[data.selected_routine] ? data.selected_routine : data.selected_group || Object.keys(data.routines)[0];
+    if (!data.routines[data.selected_routine]) data.selected_routine = Object.keys(data.routines)[0] || "";
+
+    const legacyLogs = normalizeLegacyLogs(data);
+    data.routine_logs = legacyLogs;
+    legacyLogs.forEach((log, index) => addLegacySession(data, log, index));
+
+    const migratedAt = options.now ? nowIso(options.now) : data.migration_metadata.migrated_at || nowIso();
+    data.migration_metadata = {
+      ...data.migration_metadata,
+      version: HISTORY_SCHEMA_VERSION,
+      migrated_at: migratedAt,
+      legacy_counts: {
+        routines: Object.keys(data.routines || {}).length,
+        routine_logs: legacyLogs.length,
+        sets: Array.isArray(data.sets) ? data.sets.length : 0,
+      },
+    };
+    return data;
+  }
+
+  function routineByName(data, routineName) {
+    return data.routine_definitions.find((routine) => routine.name === routineName) || null;
+  }
+
+  function sessionDate(session) {
+    return String(session.started_at || session.completed_at || "").slice(0, 10);
+  }
+
+  function sessionsForRoutine(data, routineName) {
+    const routine = routineByName(data, routineName);
+    if (!routine) return [];
+    return data.workout_sessions.filter((session) => session.routine_id === routine.id || session.routine_name === routineName);
+  }
+
+  function latestCompletedSession(data, routineName, excludeSessionId = "") {
+    return sessionsForRoutine(data, routineName)
+      .filter((session) => session.status === "completed" && session.id !== excludeSessionId)
+      .sort(sessionSortDesc)[0] || null;
+  }
+
+  function todaySession(data, routineName, today = todayIso()) {
+    return sessionsForRoutine(data, routineName)
+      .filter((session) => sessionDate(session) === today)
+      .sort(sessionSortDesc)[0] || null;
+  }
+
+  function exercisesForSession(data, sessionId) {
+    return data.workout_exercises
+      .filter((exercise) => exercise.workout_session_id === sessionId)
+      .sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+  }
+
+  function setsForWorkoutExercise(data, workoutExerciseId) {
+    return data.workout_sets.filter((set) => set.workout_exercise_id === workoutExerciseId).sort(setSort);
+  }
+
+  function copyExercisesFromSession(data, sourceSession, targetSessionId) {
+    exercisesForSession(data, sourceSession.id).forEach((sourceExercise, index) => {
+      const workoutExerciseId = randomId("wex");
+      data.workout_exercises.push({
+        id: workoutExerciseId,
+        workout_session_id: targetSessionId,
+        exercise_id: sourceExercise.exercise_id,
+        exercise_name: sourceExercise.exercise_name,
+        order: index + 1,
+        weight_offset: sourceExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
+        track_pb: boolFromData(sourceExercise.track_pb),
+        copied_from_workout_exercise_id: sourceExercise.id,
+      });
+      const sourceSets = setsForWorkoutExercise(data, sourceExercise.id);
+      const performedSets = sourceSets.filter((sourceSet) => boolFromData(sourceSet.completed));
+      (performedSets.length ? performedSets : sourceSets).forEach((sourceSet, setIndex) => {
+        data.workout_sets.push({
+          id: randomId("set"),
+          workout_exercise_id: workoutExerciseId,
+          set_number: setIndex + 1,
+          weight: sourceSet.weight,
+          reps: sourceSet.reps,
+          completed: false,
+          timestamp: "",
+          copied_from_set_id: sourceSet.id,
+        });
+      });
+    });
+  }
+
+  function seedExercisesFromRoutine(data, routine, targetSessionId) {
+    (routine.exercises || []).filter((row) => row.active !== false).forEach((routineExercise, index) => {
+      const workoutExerciseId = randomId("wex");
+      const exercise = data.exercises.find((item) => item.id === routineExercise.exercise_id);
+      data.workout_exercises.push({
+        id: workoutExerciseId,
+        workout_session_id: targetSessionId,
+        exercise_id: routineExercise.exercise_id,
+        exercise_name: exercise?.name || "Exercise",
+        order: index + 1,
+        weight_offset: routineExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
+        track_pb: false,
+      });
+      parseSetScheme(routineExercise.default_reps).forEach((sourceSet, setIndex) => {
+        data.workout_sets.push({
+          id: randomId("set"),
+          workout_exercise_id: workoutExerciseId,
+          set_number: setIndex + 1,
+          weight: formatWeight(routineExercise.default_weight ?? ""),
+          reps: sourceSet.reps,
+          completed: false,
+          timestamp: "",
+          legacy_source: "routine_template",
+          legacy_reps: routineExercise.default_reps || "",
+        });
+      });
+    });
+  }
+
+  function startWorkoutSession(data, routineName, options = {}) {
+    const today = options.today || todayIso(options.now);
+    const now = options.now ? nowIso(options.now) : nowIso();
+    const routine = routineByName(data, routineName) || {
+      id: ensureRoutineDefinition(data, routineName, data.routines?.[routineName] || []),
+      name: routineName,
+      exercises: data.routine_definitions.find((item) => item.name === routineName)?.exercises || [],
+    };
+    const existingToday = todaySession(data, routineName, today);
+    if (existingToday) return existingToday;
+
+    const session = {
+      id: randomId("session"),
+      routine_id: routine.id,
+      routine_name: routineName,
+      started_at: now,
+      completed_at: "",
+      status: "active",
+      notes: "",
+    };
+    data.workout_sessions.push(session);
+    const previous = latestCompletedSession(data, routineName, session.id);
+    if (previous) copyExercisesFromSession(data, previous, session.id);
+    else seedExercisesFromRoutine(data, routine, session.id);
+    return session;
+  }
+
+  function previousSetsForExercise(data, routineName, exerciseId, excludeSessionId) {
+    const session = sessionsForRoutine(data, routineName)
+      .filter((item) => item.status === "completed" && item.id !== excludeSessionId)
+      .filter((item) => sessionDate(item) !== sessionDate({ started_at: data.workout_sessions.find((s) => s.id === excludeSessionId)?.started_at || "" }))
+      .sort(sessionSortDesc)
+      .find((item) => exercisesForSession(data, item.id).some((exercise) => exercise.exercise_id === exerciseId));
+    if (!session) return [];
+    const previousExercise = exercisesForSession(data, session.id).find((exercise) => exercise.exercise_id === exerciseId);
+    return previousExercise ? setsForWorkoutExercise(data, previousExercise.id).filter((set) => boolFromData(set.completed)) : [];
+  }
+
+  function sessionRows(data, sessionId) {
+    const session = data.workout_sessions.find((item) => item.id === sessionId);
+    if (!session) return [];
+    return exercisesForSession(data, sessionId).map((workoutExercise) => {
+      const exercise = data.exercises.find((item) => item.id === workoutExercise.exercise_id);
+      return {
+        workout_exercise_id: workoutExercise.id,
+        exercise_id: workoutExercise.exercise_id,
+        exercise: workoutExercise.exercise_name || exercise?.name || "Exercise",
+        weight_offset: workoutExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
+        track_pb: boolFromData(workoutExercise.track_pb),
+        sets: setsForWorkoutExercise(data, workoutExercise.id),
+        previous_sets: previousSetsForExercise(data, session.routine_name, workoutExercise.exercise_id, sessionId),
+      };
+    });
+  }
+
+  function formatSets(sets) {
+    return sets.map((set) => `${formatWeight(set.weight)} lb x ${set.reps}`).join(", ");
+  }
+
+  function formatSetSummary(sets) {
+    const completed = sets.filter((set) => boolFromData(set.completed));
+    const usable = (completed.length ? completed : sets).filter((set) => String(set.reps ?? "").trim());
+    if (!usable.length) return "";
+    const sameWeight = usable.every((set) => formatWeight(set.weight) === formatWeight(usable[0].weight));
+    const reps = usable.map((set) => String(set.reps).trim()).join(",");
+    return sameWeight ? `${usable.length}x${reps}` : formatSets(usable);
+  }
+
+  function renumberSets(data, workoutExerciseId) {
+    setsForWorkoutExercise(data, workoutExerciseId).forEach((set, index) => {
+      set.set_number = index + 1;
+    });
+  }
+
+  function addWorkoutSet(data, workoutExerciseId) {
+    const sets = setsForWorkoutExercise(data, workoutExerciseId);
+    const last = sets[sets.length - 1] || { weight: "", reps: "" };
+    const next = {
+      id: randomId("set"),
+      workout_exercise_id: workoutExerciseId,
+      set_number: sets.length + 1,
+      weight: last.weight,
+      reps: last.reps,
+      completed: false,
+      timestamp: "",
+    };
+    data.workout_sets.push(next);
+    return next;
+  }
+
+  function deleteWorkoutSet(data, setId) {
+    const set = data.workout_sets.find((item) => item.id === setId);
+    if (!set) return false;
+    const workoutExerciseId = set.workout_exercise_id;
+    data.workout_sets = data.workout_sets.filter((item) => item.id !== setId);
+    if (!setsForWorkoutExercise(data, workoutExerciseId).length) addWorkoutSet(data, workoutExerciseId);
+    renumberSets(data, workoutExerciseId);
+    return true;
+  }
+
+  function updateWorkoutSet(data, setId, field, value, options = {}) {
+    const set = data.workout_sets.find((item) => item.id === setId);
+    if (!set || !["weight", "reps", "completed"].includes(field)) return null;
+    if (field === "weight") set.weight = formatWeight(value);
+    else if (field === "completed") {
+      set.completed = boolFromData(value);
+      set.timestamp = set.completed ? options.now ? nowIso(options.now) : nowIso() : "";
+    } else set.reps = String(value ?? "").trim();
+    return set;
+  }
+
+  function updateWorkoutExercise(data, workoutExerciseId, field, value) {
+    const row = data.workout_exercises.find((item) => item.id === workoutExerciseId);
+    if (!row) return null;
+    if (field === "exercise_name") row.exercise_name = cleanText(value, "Exercise");
+    if (field === "weight_offset") row.weight_offset = formatWeight(value || NEW_EXERCISE_OFFSET);
+    if (field === "track_pb") row.track_pb = boolFromData(value);
+    return row;
+  }
+
+  function addWorkoutExercise(data, sessionId, name = "New Exercise") {
+    const sessionExercises = exercisesForSession(data, sessionId);
+    const exerciseId = ensureExercise(data, { exercise: name, active: true });
+    const workoutExercise = {
+      id: randomId("wex"),
+      workout_session_id: sessionId,
+      exercise_id: exerciseId,
+      exercise_name: cleanText(name, "New Exercise"),
+      order: sessionExercises.length + 1,
+      weight_offset: NEW_EXERCISE_OFFSET,
+      track_pb: false,
+    };
+    data.workout_exercises.push(workoutExercise);
+    addWorkoutSet(data, workoutExercise.id);
+    return workoutExercise;
+  }
+
+  function deleteWorkoutExercise(data, workoutExerciseId) {
+    const exercise = data.workout_exercises.find((item) => item.id === workoutExerciseId);
+    if (!exercise) return false;
+    const sessionId = exercise.workout_session_id;
+    if (exercisesForSession(data, sessionId).length <= 1) return false;
+    data.workout_exercises = data.workout_exercises.filter((item) => item.id !== workoutExerciseId);
+    data.workout_sets = data.workout_sets.filter((set) => set.workout_exercise_id !== workoutExerciseId);
+    exercisesForSession(data, sessionId).forEach((item, index) => {
+      item.order = index + 1;
+    });
+    return true;
+  }
+
+  function moveWorkoutExercise(data, workoutExerciseId, direction) {
+    const exercise = data.workout_exercises.find((item) => item.id === workoutExerciseId);
+    if (!exercise) return false;
+    const rows = exercisesForSession(data, exercise.workout_session_id);
+    const index = rows.findIndex((item) => item.id === workoutExerciseId);
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= rows.length) return false;
+    [rows[index].order, rows[targetIndex].order] = [rows[targetIndex].order, rows[index].order];
+    return true;
+  }
+
+  function syncRoutineLogFromSession(data, sessionId) {
+    const session = data.workout_sessions.find((item) => item.id === sessionId);
+    if (!session) return null;
+    const date = sessionDate(session) || todayIso();
+    const exercises = sessionRows(data, sessionId).map((row) => ({
+      exercise: row.exercise,
+      weight: row.sets[0] ? formatWeight(row.sets[0].weight) : "",
+      reps: formatSetSummary(row.sets),
+      weight_offset: row.weight_offset,
+      track_pb: row.track_pb,
+      workout_exercise_id: row.workout_exercise_id,
+      sets: row.sets.map((set) => ({
+        id: set.id,
+        set_number: set.set_number,
+        weight: formatWeight(set.weight),
+        reps: String(set.reps ?? ""),
+        completed: boolFromData(set.completed),
+        timestamp: set.timestamp || "",
+      })),
+    }));
+    const pb_entries = exercises
+      .filter((exercise) => exercise.track_pb)
+      .map((exercise) => ({ exercise: exercise.exercise, weight: exercise.weight, reps: exercise.reps }));
+    const log = {
+      date,
+      routine: session.routine_name,
+      exercises,
+      pb_entries,
+      session_id: session.id,
+      completed_at: session.completed_at,
+    };
+    const index = data.routine_logs.findIndex((item) => item.session_id === session.id);
+    if (index >= 0) data.routine_logs[index] = log;
+    else data.routine_logs.push(log);
+    return log;
+  }
+
+  function completeWorkoutSession(data, sessionId, options = {}) {
+    const session = data.workout_sessions.find((item) => item.id === sessionId);
+    if (!session) return null;
+    session.status = "completed";
+    session.completed_at = options.now ? nowIso(options.now) : nowIso();
+    session.notes = session.notes || "";
+    syncRoutineLogFromSession(data, sessionId);
+    return session;
+  }
+
+  return {
+    HISTORY_SCHEMA_VERSION,
+    clone,
+    ensureHistoricalModel,
+    startWorkoutSession,
+    latestCompletedSession,
+    todaySession,
+    sessionRows,
+    setsForWorkoutExercise,
+    addWorkoutSet,
+    deleteWorkoutSet,
+    updateWorkoutSet,
+    updateWorkoutExercise,
+    addWorkoutExercise,
+    deleteWorkoutExercise,
+    moveWorkoutExercise,
+    completeWorkoutSession,
+    syncRoutineLogFromSession,
+    formatSets,
+    formatSetSummary,
+    parseSetScheme,
+    stableId,
+  };
+});

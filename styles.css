@@ -494,6 +494,10 @@ button {
   align-content: start;
 }
 
+.workout-detail {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .card-title-row {
   grid-column: 1 / -1;
   display: grid;
@@ -571,6 +575,66 @@ button {
   display: flex;
   justify-content: flex-end;
   gap: 6px;
+}
+
+.mini-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.previous-line {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.set-grid {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, 0.82fr) 42px 30px;
+  gap: 6px;
+  align-items: center;
+}
+
+.set-head,
+.set-number {
+  color: #a9c7ff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.set-number {
+  color: var(--text);
+}
+
+.set-input {
+  min-height: 32px;
+  padding: 6px 8px;
+}
+
+.set-check {
+  min-height: 32px;
+  display: grid;
+  place-items: center;
+}
+
+.set-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+}
+
+.set-delete {
+  min-height: 30px;
+  padding: 0;
+}
+
+.add-set-btn {
+  min-height: 34px;
+  padding: 7px 10px;
 }
 
 .full-row {

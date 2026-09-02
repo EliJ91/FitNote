@@ -15,7 +15,9 @@ Then open `http://localhost:8080`.
 ## Features
 
 - Create, edit, delete, and select workout routines
-- Save workout entries with confirmation
+- Start today's workout from the most recent completed workout of the same routine
+- Save actual individual workout sets with weight, reps, completion status, and timestamps
+- Reopen the same day's workout to add more sets later
 - Track weight, reps, set weight offsets, and PB-marked exercises
 - View routine and exercise trend graphs
 - View PB History beneath the graph
@@ -27,6 +29,10 @@ Then open `http://localhost:8080`.
 - Installable PWA shell with offline caching
 
 The previous Python desktop app is still included for reference, but active development is now focused on the browser version.
+
+## Workout History
+
+Browser storage now keeps a versioned historical model alongside legacy fields: exercises, routine definitions, workout sessions, workout exercises, and individual workout sets. Legacy summaries such as `3x8` are migrated into individual set records and tagged as summarized legacy data. The migration is idempotent and creates a localStorage backup before upgrading older browser data.
 
 ## Supabase
 

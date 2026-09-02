@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.1.13";
+  const APP_VERSION = "1.2.0";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -42,6 +42,7 @@
   const importFile = document.getElementById("import-file");
   const toast = document.getElementById("toast");
   const cloudConfig = window.WORKOUT_SUPABASE || {};
+  const workoutHistory = window.WorkoutHistory;
   const canAttemptCloud = Boolean(window.supabase && cloudConfig.url && cloudConfig.anonKey);
   const cloudProjectRef = projectRefFromUrl(cloudConfig.url);
   const supabaseStorageKey = cloudProjectRef ? `sb-${cloudProjectRef}-auth-token` : "";
@@ -49,6 +50,7 @@
 
   let authSession = null;
   let state = loadState();
+  let currentSessionId = null;
   let currentPage = "routine";
   let editMode = false;
   let editSnapshot = null;
@@ -284,24 +286,9 @@
 
   function normalizeData(input) {
     const source = input && typeof input === "object" ? input : {};
-    const routines = source.routines ? clone(source.routines) : routinesFromLegacy(source);
-    Object.keys(routines).forEach((name) => {
-      routines[name] = Array.isArray(routines[name]) ? routines[name].map(normalizeExercise) : [];
-      if (!routines[name].length) {
-        routines[name] = [{ exercise: "New Exercise", weight: "", reps: "", weight_offset: NEW_EXERCISE_OFFSET, track_pb: false }];
-      }
-    });
-
-    const routineLogs = source.routine_logs
-      ? source.routine_logs.map(normalizeLog)
-      : logsFromLegacy(source).map(normalizeLog);
-    const selected = String(source.selected_routine || source.selected_group || Object.keys(routines)[0] || "Push Day");
-    return {
-      settings: { always_on_top: boolFromData(source.settings?.always_on_top) },
-      selected_routine: routines[selected] ? selected : Object.keys(routines)[0],
-      routines,
-      routine_logs: routineLogs,
-    };
+    const data = workoutHistory.ensureHistoricalModel(source, { today: TODAY });
+    data.settings = { ...data.settings, always_on_top: boolFromData(data.settings?.always_on_top) };
+    return data;
   }
 
   function userStorageKey(userId) {
@@ -315,7 +302,15 @@
   function loadStoredState(key) {
     try {
       const stored = localStorage.getItem(key);
-      if (stored) return normalizeData(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (!parsed.history_version || parsed.history_version < workoutHistory.HISTORY_SCHEMA_VERSION) {
+          const backupKey = `${key}.backup.${TODAY}.${Date.now()}`;
+          localStorage.setItem(backupKey, stored);
+          parsed.migration_metadata = { ...(parsed.migration_metadata || {}), backup_key: backupKey };
+        }
+        return normalizeData(parsed);
+      }
     } catch (_error) {
       localStorage.removeItem(key);
     }
@@ -335,6 +330,7 @@
 
   function applyLoadedState(nextState) {
     state = normalizeData(nextState);
+    currentSessionId = null;
     dataSelection = { kind: "routine", value: state.selected_routine };
     selectedHistory = new Set();
   }
@@ -604,6 +600,44 @@
     return state.routines[currentRoutine()] || [];
   }
 
+  function currentWorkoutSession() {
+    if (editMode) return null;
+    const routine = currentRoutine();
+    const existing =
+      currentSessionId && state.workout_sessions.find((session) => session.id === currentSessionId && session.routine_name === routine);
+    if (existing && String(existing.started_at || existing.completed_at || "").slice(0, 10) === TODAY) return existing;
+    const session = workoutHistory.startWorkoutSession(state, routine, { today: TODAY });
+    currentSessionId = session.id;
+    saveState();
+    return session;
+  }
+
+  function currentWorkoutRows() {
+    const session = currentWorkoutSession();
+    return session ? workoutHistory.sessionRows(state, session.id) : [];
+  }
+
+  function historySessions() {
+    return state.workout_sessions
+      .filter((session) => session.status === "completed")
+      .sort((a, b) => String(b.completed_at || b.started_at || "").localeCompare(String(a.completed_at || a.started_at || "")));
+  }
+
+  function deleteWorkoutSession(sessionId) {
+    const session = state.workout_sessions.find((item) => item.id === sessionId);
+    const exerciseIds = new Set(state.workout_exercises.filter((item) => item.workout_session_id === sessionId).map((item) => item.id));
+    state.workout_sessions = state.workout_sessions.filter((item) => item.id !== sessionId);
+    state.workout_exercises = state.workout_exercises.filter((item) => item.workout_session_id !== sessionId);
+    state.workout_sets = state.workout_sets.filter((item) => !exerciseIds.has(item.workout_exercise_id));
+    state.routine_logs = state.routine_logs.filter((log, index) => {
+      if (log.session_id === sessionId) return false;
+      if (!session) return true;
+      const legacyId = workoutHistory.stableId("session", "legacy-log", log.date, log.routine, index);
+      return legacyId !== sessionId;
+    });
+    if (currentSessionId === sessionId) currentSessionId = null;
+  }
+
   function setPage(page) {
     if (!canEnterApp()) {
       render();
@@ -804,7 +838,8 @@
   }
 
   function renderRoutinePage() {
-    const rows = currentRows();
+    const rows = editMode ? currentRows() : currentWorkoutRows();
+    const session = editMode ? null : currentWorkoutSession();
     return `
       <section class="routine-page">
         <div>
@@ -831,8 +866,8 @@
           ${rows.map((row, index) => renderExerciseCard(row, index)).join("")}
         </div>
         <div class="bottom-actions">
-          ${editMode ? '<button class="btn btn-secondary" type="button" data-action="add-exercise">Add Exercise</button>' : ""}
-          <button class="btn btn-primary" type="button" data-action="save-routine">${editMode ? "Save Changes" : "Save Workout"}</button>
+          <button class="btn btn-secondary" type="button" data-action="add-exercise">Add Exercise</button>
+          <button class="btn btn-primary" type="button" data-action="save-routine">${editMode ? "Save Changes" : session?.status === "completed" ? "Update Workout" : "Complete Workout"}</button>
         </div>
         <div class="scroll-float" data-scroll-float></div>
       </section>
@@ -841,7 +876,7 @@
 
   function renderExerciseCard(row, index) {
     const editable = editMode;
-    const pbEditable = !editable && row.track_pb;
+    if (!editable) return renderWorkoutExerciseCard(row, index);
     return `
       <article class="exercise-card" data-index="${index}">
         <div class="exercise-side">
@@ -882,8 +917,8 @@
           }
           <div class="field-label">Weight</div>
           <div class="field-label">Reps</div>
-          ${fieldOrBox(row, index, "weight", "lbs", editable || pbEditable)}
-          ${fieldOrBox(row, index, "reps", "", editable || pbEditable)}
+          ${fieldOrBox(row, index, "weight", "lbs", editable)}
+          ${fieldOrBox(row, index, "reps", "", editable)}
           ${
             editable
               ? `<div class="field-label full-row">Set Weight Offset</div>
@@ -892,6 +927,52 @@
           }
         </div>
       </article>
+    `;
+  }
+
+  function renderWorkoutExerciseCard(row, index) {
+    const firstSet = row.sets[0] || { weight: "", reps: "" };
+    const previous = row.previous_sets.length ? workoutHistory.formatSets(row.previous_sets) : "No previous workout";
+    return `
+      <article class="exercise-card workout-card" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">
+        <div class="exercise-side">
+          ${renderPlate({ weight: firstSet.weight, weight_offset: row.weight_offset })}
+          <div class="move-controls">
+            <button class="move-btn" type="button" data-action="move-exercise" data-direction="up" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
+            <button class="move-btn" type="button" data-action="move-exercise" data-direction="down" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" aria-label="Move exercise down" title="Move down" ${index === currentWorkoutRows().length - 1 ? "disabled" : ""}>${iconSvg("down")}</button>
+          </div>
+        </div>
+        <div class="exercise-detail workout-detail">
+          <div class="card-title-row">
+            <h2 class="exercise-title">${escapeHtml(row.exercise)}</h2>
+            <div class="mini-actions">
+              <button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">PB</button>
+              <button class="delete-mini" type="button" data-action="delete-workout-exercise" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">X</button>
+            </div>
+          </div>
+          <input class="text-input full-row" data-workout-exercise-field="exercise_name" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" value="${escapeAttr(row.exercise)}">
+          <div class="previous-line full-row">Previous: ${escapeHtml(previous)}</div>
+          <div class="set-grid full-row">
+            <div class="set-head">Set</div>
+            <div class="set-head">Weight</div>
+            <div class="set-head">Reps</div>
+            <div class="set-head">Done</div>
+            <div class="set-head"></div>
+            ${row.sets.map((set) => renderSetRow(set)).join("")}
+          </div>
+          <button class="btn btn-secondary add-set-btn full-row" type="button" data-action="add-set" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">+ Add Set</button>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderSetRow(set) {
+    return `
+      <div class="set-number">${escapeHtml(set.set_number)}</div>
+      <input class="text-input set-input" data-set-field="weight" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.weight)}">
+      <input class="text-input set-input" data-set-field="reps" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.reps)}">
+      <label class="set-check"><input type="checkbox" data-set-complete data-set-id="${escapeAttr(set.id)}" ${set.completed ? "checked" : ""}></label>
+      <button class="delete-mini set-delete" type="button" data-action="delete-set" data-set-id="${escapeAttr(set.id)}">X</button>
     `;
   }
 
@@ -998,6 +1079,8 @@
       const selectRoutine = () => {
         closeEditMode(false);
         state.selected_routine = button.dataset.routine;
+        currentSessionId = null;
+        currentWorkoutSession();
         dataSelection = { kind: "routine", value: state.selected_routine };
         saveState();
         render();
@@ -1037,8 +1120,13 @@
 
     app.querySelectorAll("[data-action='toggle-pb']").forEach((button) => {
       button.addEventListener("click", () => {
-        const row = currentRows()[Number(button.dataset.index)];
-        row.track_pb = !row.track_pb;
+        if (editMode) {
+          const row = currentRows()[Number(button.dataset.index)];
+          row.track_pb = !row.track_pb;
+        } else {
+          const row = state.workout_exercises.find((item) => item.id === button.dataset.workoutExerciseId);
+          if (row) row.track_pb = !row.track_pb;
+        }
         saveState();
         render();
       });
@@ -1049,7 +1137,63 @@
     });
 
     app.querySelectorAll("[data-action='move-exercise']").forEach((button) => {
-      button.addEventListener("click", () => moveExercise(Number(button.dataset.index), button.dataset.direction));
+      button.addEventListener("click", () => {
+        if (editMode) moveExercise(Number(button.dataset.index), button.dataset.direction);
+        else {
+          workoutHistory.moveWorkoutExercise(state, button.dataset.workoutExerciseId, button.dataset.direction);
+          saveState();
+          render();
+        }
+      });
+    });
+
+    app.querySelectorAll("[data-set-field]").forEach((input) => {
+      input.addEventListener("input", () => {
+        workoutHistory.updateWorkoutSet(state, input.dataset.setId, input.dataset.setField, input.value);
+        saveState();
+        if (input.dataset.setField === "weight") {
+          const card = input.closest(".exercise-card");
+          const row = workoutHistory
+            .sessionRows(state, currentWorkoutSession().id)
+            .find((item) => item.workout_exercise_id === card?.dataset.workoutExerciseId);
+          const plate = card?.querySelector("[data-plate]");
+          if (plate && row) plate.outerHTML = renderPlate({ weight: row.sets[0]?.weight || "", weight_offset: row.weight_offset });
+        }
+      });
+    });
+
+    app.querySelectorAll("[data-set-complete]").forEach((input) => {
+      input.addEventListener("change", () => {
+        workoutHistory.updateWorkoutSet(state, input.dataset.setId, "completed", input.checked);
+        saveState();
+      });
+    });
+
+    app.querySelectorAll("[data-workout-exercise-field]").forEach((input) => {
+      input.addEventListener("input", () => {
+        workoutHistory.updateWorkoutExercise(state, input.dataset.workoutExerciseId, input.dataset.workoutExerciseField, input.value);
+        saveState();
+      });
+    });
+
+    app.querySelectorAll("[data-action='add-set']").forEach((button) => {
+      button.addEventListener("click", () => {
+        workoutHistory.addWorkoutSet(state, button.dataset.workoutExerciseId);
+        saveState();
+        render();
+      });
+    });
+
+    app.querySelectorAll("[data-action='delete-set']").forEach((button) => {
+      button.addEventListener("click", () => {
+        workoutHistory.deleteWorkoutSet(state, button.dataset.setId);
+        saveState();
+        render();
+      });
+    });
+
+    app.querySelectorAll("[data-action='delete-workout-exercise']").forEach((button) => {
+      button.addEventListener("click", () => deleteExercise(button.dataset.workoutExerciseId));
     });
 
     const list = app.querySelector("[data-routine-list]");
@@ -1080,10 +1224,11 @@
   }
 
   async function saveRoutineButton() {
-    if (!validateRows()) return;
     if (editMode) {
+      if (!validateRows()) return;
       editMode = false;
       editSnapshot = null;
+      state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
       saveState();
       render();
       if (!hasCloudIdentity()) {
@@ -1094,23 +1239,11 @@
       showToast(result.databaseFull ? "Database is full. Saved on this device only." : `${currentRoutine()} was updated.`);
       return;
     }
-    const ok = await confirmDialog("Save workout", `Save ${currentRoutine()} for ${TODAY}?`, "Save");
+    if (!validateWorkoutRows()) return;
+    const ok = await confirmDialog("Complete workout", `Complete ${currentRoutine()} for ${TODAY}?`, "Complete");
     if (!ok) return;
-    const exercises = currentRows().map((row) => ({
-      exercise: row.exercise.trim(),
-      weight: formatWeight(row.weight),
-      reps: row.reps.trim(),
-      weight_offset: formatWeight(row.weight_offset || NEW_EXERCISE_OFFSET),
-      track_pb: Boolean(row.track_pb),
-    }));
-    const pbEntries = currentRows()
-      .filter((row) => row.track_pb)
-      .map((row) => ({
-        exercise: row.exercise.trim(),
-        weight: formatWeight(row.weight),
-        reps: row.reps.trim(),
-    }));
-    state.routine_logs.push({ date: TODAY, routine: currentRoutine(), exercises, pb_entries: pbEntries });
+    const session = currentWorkoutSession();
+    workoutHistory.completeWorkoutSession(state, session.id);
     saveState();
     if (!hasCloudIdentity()) {
       showToast(`${currentRoutine()} was saved to this browser.`);
@@ -1130,7 +1263,30 @@
     return true;
   }
 
+  function validateWorkoutRows() {
+    const rows = currentWorkoutRows();
+    for (const row of rows) {
+      if (!row.exercise.trim()) {
+        showToast("Each exercise needs a name.");
+        return false;
+      }
+      for (const set of row.sets) {
+        if (!String(set.reps ?? "").trim() || !isValidWeight(set.weight)) {
+          showToast("Each set needs reps and a valid weight.");
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
   function addExercise() {
+    if (!editMode) {
+      workoutHistory.addWorkoutExercise(state, currentWorkoutSession().id);
+      saveState();
+      render();
+      return;
+    }
     currentRows().push({
       exercise: "New Exercise",
       weight: "",
@@ -1143,6 +1299,20 @@
   }
 
   async function deleteExercise(index) {
+    if (!editMode) {
+      const row = state.workout_exercises.find((item) => item.id === index);
+      if (!row) return;
+      if (workoutHistory.sessionRows(state, currentWorkoutSession().id).length <= 1) {
+        showToast("Each workout needs at least one exercise.");
+        return;
+      }
+      const ok = await confirmDialog("Delete exercise", `Delete ${row.exercise_name}?`, "Delete");
+      if (!ok) return;
+      workoutHistory.deleteWorkoutExercise(state, index);
+      saveState();
+      render();
+      return;
+    }
     if (currentRows().length <= 1) {
       showToast("Each routine needs at least one exercise.");
       return;
@@ -1162,8 +1332,12 @@
     const ok = await confirmDialog("Delete routine", `Delete ${routine}?`, "Delete");
     if (!ok) return;
     delete state.routines[routine];
+    state.routine_definitions = state.routine_definitions.map((item) =>
+      item.name === routine ? { ...item, active: false } : item
+    );
     if (state.selected_routine === routine) {
       state.selected_routine = routineNames()[0];
+      currentSessionId = null;
       dataSelection = { kind: "routine", value: state.selected_routine };
     }
     closeEditMode(false);
@@ -1246,16 +1420,17 @@
   }
 
   function renderHistoryPage() {
-    const rows = state.routine_logs
-      .map((log, index) => ({ log, index }))
-      .reverse()
-      .map(({ log, index }) => {
-        const selected = selectedHistory.has(index);
+    const rows = historySessions()
+      .map((session) => {
+        const selected = selectedHistory.has(session.id);
+        const exercises = state.workout_exercises.filter((row) => row.workout_session_id === session.id);
+        const setCount = state.workout_sets.filter((set) => set.completed && exercises.some((row) => row.id === set.workout_exercise_id)).length;
         return `
-          <tr class="history-row ${selected ? "selected" : ""}" data-history-index="${index}">
-            <td>${escapeHtml(log.date)}</td>
-            <td>${escapeHtml(log.routine)}</td>
-            <td>${escapeHtml(log.exercises.length)}</td>
+          <tr class="history-row ${selected ? "selected" : ""}" data-history-id="${escapeAttr(session.id)}">
+            <td>${escapeHtml(String(session.completed_at || session.started_at || "").slice(0, 10))}</td>
+            <td>${escapeHtml(session.routine_name)}</td>
+            <td>${escapeHtml(exercises.length)}</td>
+            <td>${escapeHtml(setCount)}</td>
           </tr>
         `;
       })
@@ -1270,8 +1445,8 @@
         </div>
         <div class="history-list">
           <table>
-            <thead><tr><th>Date</th><th>Routine</th><th>Exercises</th></tr></thead>
-            <tbody>${rows || '<tr><td colspan="3" class="muted">No saved workouts yet.</td></tr>'}</tbody>
+            <thead><tr><th>Date</th><th>Routine</th><th>Exercises</th><th>Sets</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="4" class="muted">No saved workouts yet.</td></tr>'}</tbody>
           </table>
         </div>
         <button class="btn btn-danger" type="button" data-action="delete-history">Delete</button>
@@ -1283,7 +1458,7 @@
     app.querySelector("[data-action='export-data']").addEventListener("click", exportData);
     app.querySelector("[data-action='import-data']").addEventListener("click", () => importFile.click());
     app.querySelector("[data-action='select-all']").addEventListener("click", () => {
-      selectedHistory = new Set(state.routine_logs.map((_log, index) => index));
+      selectedHistory = new Set(historySessions().map((session) => session.id));
       render();
     });
     app.querySelector("[data-action='deselect-all']").addEventListener("click", () => {
@@ -1291,11 +1466,11 @@
       render();
     });
     app.querySelector("[data-action='delete-history']").addEventListener("click", deleteHistory);
-    app.querySelectorAll("[data-history-index]").forEach((row) => {
+    app.querySelectorAll("[data-history-id]").forEach((row) => {
       row.addEventListener("click", () => {
-        const index = Number(row.dataset.historyIndex);
-        if (selectedHistory.has(index)) selectedHistory.delete(index);
-        else selectedHistory.add(index);
+        const sessionId = row.dataset.historyId;
+        if (selectedHistory.has(sessionId)) selectedHistory.delete(sessionId);
+        else selectedHistory.add(sessionId);
         render();
       });
     });
@@ -1325,7 +1500,7 @@
     const count = selectedHistory.size;
     const ok = await confirmDialog("Delete history", `Delete ${count} saved workout${count === 1 ? "" : "s"}?`, "Delete");
     if (!ok) return;
-    state.routine_logs = state.routine_logs.filter((_log, index) => !selectedHistory.has(index));
+    Array.from(selectedHistory).forEach(deleteWorkoutSession);
     selectedHistory = new Set();
     saveState();
     render();
@@ -1342,21 +1517,40 @@
       }
     });
 
-    const dates = new Set(state.routine_logs.map((log) => String(log.date)));
+    const mergeById = (field) => {
+      const existing = new Set(state[field].map((item) => item.id));
+      let count = 0;
+      incoming[field].forEach((item) => {
+        if (existing.has(item.id)) return;
+        state[field].push(item);
+        existing.add(item.id);
+        count += 1;
+      });
+      return count;
+    };
+    mergeById("exercises");
+    mergeById("routine_definitions");
+    const sessionCount = mergeById("workout_sessions");
+    mergeById("workout_exercises");
+    mergeById("workout_sets");
+
+    const logKeys = new Set(state.routine_logs.map((log) => log.session_id || `${log.date}::${log.routine}::${log.exercises?.length || 0}`));
     let logCount = 0;
     let skipped = 0;
     incoming.routine_logs.forEach((log) => {
-      if (!log.date || dates.has(String(log.date))) {
+      const key = log.session_id || `${log.date}::${log.routine}::${log.exercises?.length || 0}`;
+      if (!log.date || logKeys.has(key)) {
         skipped += 1;
         return;
       }
       state.routine_logs.push(log);
-      dates.add(String(log.date));
+      logKeys.add(key);
       logCount += 1;
     });
+    state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
     saveState();
     render();
-    showToast(`Imported ${routineCount} routines and ${logCount} history entries. Skipped ${skipped}.`);
+    showToast(`Imported ${routineCount} routines and ${sessionCount || logCount} workouts. Skipped ${skipped}.`);
   }
 
   importFile.addEventListener("change", async () => {
@@ -1374,16 +1568,18 @@
 
   function exercisePoints() {
     const points = [];
-    state.routine_logs.forEach((log) => {
-      log.exercises.forEach((item) => {
-        points.push({
-          date: log.date,
-          routine: log.routine,
+    historySessions().forEach((session) => {
+      workoutHistory.sessionRows(state, session.id).forEach((item) => {
+        item.sets.filter((set) => set.completed).forEach((set) => {
+          points.push({
+          date: String(session.completed_at || session.started_at || "").slice(0, 10),
+          routine: session.routine_name,
           exercise: item.exercise,
-          weight: item.weight,
-          reps: item.reps,
-          numericWeight: Number(item.weight) || 0,
-          tooltip: `${item.exercise}\nWeight: ${item.weight}\nReps: ${item.reps}`,
+          weight: set.weight,
+          reps: set.reps,
+          numericWeight: Number(set.weight) || 0,
+          tooltip: `${item.exercise}\nWeight: ${set.weight}\nReps: ${set.reps}`,
+          });
         });
       });
     });
@@ -1392,19 +1588,18 @@
 
   function pbPoints() {
     const points = [];
-    state.routine_logs.forEach((log) => {
-      let entries = Array.isArray(log.pb_entries) ? log.pb_entries : [];
-      if (!entries.length) entries = log.exercises.filter((item) => item.track_pb);
-      entries.forEach((item) => {
+    historySessions().forEach((session) => {
+      workoutHistory.sessionRows(state, session.id).filter((item) => item.track_pb).forEach((item) => {
         if (!item.exercise) return;
+        const summary = workoutHistory.formatSetSummary(item.sets);
         points.push({
-          date: log.date,
-          routine: log.routine,
+          date: String(session.completed_at || session.started_at || "").slice(0, 10),
+          routine: session.routine_name,
           exercise: item.exercise,
-          weight: item.weight,
-          reps: item.reps,
-          numericWeight: Number(item.weight) || 0,
-          tooltip: `${item.exercise}\nPB Weight: ${item.weight}\nPB Reps: ${item.reps}`,
+          weight: item.sets[0]?.weight || "",
+          reps: summary,
+          numericWeight: Number(item.sets[0]?.weight) || 0,
+          tooltip: `${item.exercise}\nPB Sets: ${summary}`,
         });
       });
     });
@@ -1429,12 +1624,23 @@
     let totalReps = 0;
     let totalWeight = 0;
     log.exercises.forEach((item) => {
-      const weight = Number(item.weight) || 0;
-      const parsed = parseRepsForSummary(item.reps);
-      if (parsed.sets <= 0 || parsed.reps <= 0) return;
-      totalSets += parsed.sets;
-      totalReps += parsed.sets * parsed.reps;
-      totalWeight += weight * parsed.sets * parsed.reps;
+      if (Array.isArray(item.sets) && item.sets.length) {
+        item.sets.forEach((set) => {
+          const weight = Number(set.weight) || 0;
+          const reps = Number(set.reps) || 0;
+          if (reps <= 0) return;
+          totalSets += 1;
+          totalReps += reps;
+          totalWeight += weight * reps;
+        });
+      } else {
+        const weight = Number(item.weight) || 0;
+        const parsed = parseRepsForSummary(item.reps);
+        if (parsed.sets <= 0 || parsed.reps <= 0) return;
+        totalSets += parsed.sets;
+        totalReps += parsed.sets * parsed.reps;
+        totalWeight += weight * parsed.sets * parsed.reps;
+      }
     });
     return {
       date: log.date,
@@ -1446,9 +1652,30 @@
   }
 
   function routineSummaries(routine) {
-    return state.routine_logs
-      .filter((log) => log.routine === routine)
-      .map(summarizeRoutineLog)
+    return historySessions()
+      .filter((session) => session.routine_name === routine)
+      .map((session) => {
+        let totalSets = 0;
+        let totalReps = 0;
+        let totalWeight = 0;
+        workoutHistory.sessionRows(state, session.id).forEach((row) => {
+          row.sets.filter((set) => set.completed).forEach((set) => {
+            const reps = Number(set.reps) || 0;
+            const weight = Number(set.weight) || 0;
+            if (reps <= 0) return;
+            totalSets += 1;
+            totalReps += reps;
+            totalWeight += weight * reps;
+          });
+        });
+        return {
+          date: String(session.completed_at || session.started_at || "").slice(0, 10),
+          routine: session.routine_name,
+          totalWeight,
+          totalSets,
+          averageReps: totalSets ? totalReps / totalSets : 0,
+        };
+      })
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   }
 
