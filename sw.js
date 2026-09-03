@@ -1,11 +1,11 @@
-const CACHE_NAME = "workout-planner-v21";
+const CACHE_NAME = "workout-planner-v23";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=21",
-  "./supabase-config.js?v=21",
-  "./workout-history.js?v=21",
-  "./app.js?v=21",
+  "./styles.css?v=23",
+  "./supabase-config.js?v=23",
+  "./workout-history.js?v=23",
+  "./app.js?v=23",
   "./manifest.webmanifest",
   "./icons/icon.svg",
 ];
@@ -26,9 +26,31 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const requestUrl = new URL(event.request.url);
+
   if (event.request.mode === "navigate" || event.request.destination === "document") {
-    event.respondWith(fetch(event.request).catch(() => caches.match("./index.html").then((cached) => cached || caches.match("./"))));
+    event.respondWith(
+      fetch(event.request, { cache: "no-store" }).catch(() =>
+        caches.match("./index.html").then((cached) => cached || caches.match("./"))
+      )
+    );
     return;
   }
-  event.respondWith(caches.match(event.request).then((cached) => cached || fetch(event.request)));
+
+  if (requestUrl.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  event.respondWith(
+    fetch(event.request, { cache: "no-store" })
+      .then((response) => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
+  );
 });
