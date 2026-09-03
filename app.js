@@ -380,14 +380,21 @@
             ? '<button class="menu-item" type="button" data-action="leave-guest">Leave Guest Mode</button>'
             : '<button class="menu-item" type="button" data-action="guest-sign-in">Guest Sign In</button>'
         }
-        <button class="menu-item menu-status" type="button" disabled>${localStorageStatus()}</button>
       `;
     }
     return `
-      <button class="menu-item" type="button" data-action="sync-cloud">Sync Now</button>
       <button class="menu-item" type="button" data-action="sign-out-google">Sign out</button>
-      <button class="menu-item menu-status" type="button" disabled>${escapeHtml(cloudUserLabel())}<br>${escapeHtml(cloudStatus)}</button>
     `;
+  }
+
+  function cloudFooterStatus() {
+    if (authSession) {
+      return `<button class="menu-item menu-status" type="button" disabled data-cloud-status>${escapeHtml(cloudUserLabel())} ${escapeHtml(cloudStatus)}</button>`;
+    }
+    if (guestMode || cloudStatus !== "Browser storage only") {
+      return `<button class="menu-item menu-status" type="button" disabled data-cloud-status>${localStorageStatus()}</button>`;
+    }
+    return "";
   }
 
   function isDatabaseFullError(error) {
@@ -484,11 +491,9 @@
   }
 
   function updateMenuStatus() {
-    const statusNode = app.querySelector(".menu-status");
+    const statusNode = app.querySelector("[data-cloud-status]");
     if (statusNode) {
-      statusNode.innerHTML = authSession
-        ? `${escapeHtml(cloudUserLabel())}<br>${escapeHtml(cloudStatus)}`
-        : escapeHtml(cloudStatus);
+      statusNode.innerHTML = authSession ? `${escapeHtml(cloudUserLabel())} ${escapeHtml(cloudStatus)}` : localStorageStatus();
     }
   }
 
@@ -669,7 +674,6 @@
         </header>
         <nav class="app-menu" data-menu hidden>
           <button class="menu-item" type="button" data-nav="routine">Home</button>
-          <button class="menu-item" type="button" data-nav="new" ${canCreateRoutines() ? "" : "disabled"}>New Routine</button>
           <div class="menu-separator"></div>
           <button class="menu-item" type="button" data-nav="history">History</button>
           <button class="menu-item" type="button" data-nav="data">Data</button>
@@ -678,6 +682,7 @@
           ${cloudMenu()}
           <div class="menu-separator"></div>
           <button class="menu-item" type="button" disabled>Version ${escapeHtml(APP_VERSION)}</button>
+          ${cloudFooterStatus()}
         </nav>
         <main class="page-body">${body}</main>
       </section>
@@ -786,13 +791,6 @@
         render();
       });
     }
-    const sync = app.querySelector("[data-action='sync-cloud']");
-    if (sync) {
-      sync.addEventListener("click", async () => {
-        const result = await saveCloudData({ quiet: false });
-        if (result.ok) showToast("Cloud sync complete.");
-      });
-    }
   }
 
   function renderRoutinePage() {
@@ -818,8 +816,12 @@
               </div>
             </div>
             <div class="routine-toolbar">
-              <button class="btn btn-secondary routine-tool" type="button" data-action="toggle-edit" aria-label="${editMode ? "Cancel edit" : "Edit routine"}" title="${editMode ? "Cancel" : "Edit Routine"}">${iconSvg(editMode ? "cancel" : "edit")}</button>
-              <button class="btn btn-danger routine-tool" type="button" data-action="delete-current-routine" aria-label="Delete routine" title="Delete Routine">${iconSvg("trash")}</button>
+              <button class="btn btn-secondary routine-tool" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
+              <div class="routine-actions-menu" data-routine-actions-menu hidden>
+                <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
+                <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
+                <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
+              </div>
             </div>
           </div>
         </div>
@@ -935,8 +937,14 @@
     });
 
     app.querySelector("[data-action='save-routine']").addEventListener("click", saveRoutineButton);
+    app.querySelector("[data-action='toggle-routine-actions']").addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menu = app.querySelector("[data-routine-actions-menu]");
+      if (menu) menu.hidden = !menu.hidden;
+    });
     app.querySelector("[data-action='toggle-edit']").addEventListener("click", toggleEditMode);
     app.querySelector("[data-action='delete-current-routine']").addEventListener("click", () => deleteRoutine(currentRoutine()));
+    app.querySelector("[data-action='create-new-routine']").addEventListener("click", () => setPage("new"));
     const addButton = app.querySelector("[data-action='add-exercise']");
     if (addButton) addButton.addEventListener("click", addExercise);
 
@@ -962,10 +970,12 @@
     });
 
     app.querySelector(".routine-page").addEventListener("click", (event) => {
-      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu]")) return;
+      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu], [data-action='toggle-routine-actions'], [data-routine-actions-menu]")) return;
       app.querySelectorAll("[data-exercise-menu]").forEach((menu) => {
         menu.hidden = true;
       });
+      const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
+      if (routineActionsMenu) routineActionsMenu.hidden = true;
     });
 
     app.querySelectorAll("[data-action='toggle-pb']").forEach((button) => {
@@ -1769,6 +1779,8 @@
     if (!event.target.closest(".routine-selector")) {
       const routineMenu = app.querySelector("[data-routine-menu]");
       if (routineMenu) routineMenu.hidden = true;
+      const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
+      if (routineActionsMenu) routineActionsMenu.hidden = true;
     }
   });
 

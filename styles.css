@@ -154,6 +154,7 @@ button {
 .routine-menu[hidden],
 .data-menu[hidden],
 .exercise-menu[hidden],
+.routine-actions-menu[hidden],
 .confirm-backdrop[hidden] {
   display: none;
 }
@@ -346,6 +347,7 @@ button {
 }
 
 .routine-toolbar {
+  position: relative;
   display: flex;
   gap: 10px;
 }
@@ -533,17 +535,26 @@ button {
   color: #d6e4f8;
 }
 
-.exercise-menu {
+.exercise-menu,
+.routine-actions-menu {
   position: absolute;
   z-index: 20;
-  top: 62px;
-  right: 14px;
   width: 176px;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #081424;
   box-shadow: 0 16px 34px rgba(0, 0, 0, 0.38);
+}
+
+.exercise-menu {
+  top: 62px;
+  right: 14px;
+}
+
+.routine-actions-menu {
+  top: calc(100% + 6px);
+  right: 0;
 }
 
 .previous-line {
