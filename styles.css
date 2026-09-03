@@ -77,7 +77,6 @@ button {
   justify-content: space-between;
   gap: 16px;
   min-width: 0;
-  padding-top: 2px;
 }
 
 .topbar h1 {
@@ -86,11 +85,26 @@ button {
   font-size: 2rem;
   font-weight: 850;
   letter-spacing: 0;
-  line-height: 1.05;
+  line-height: 1;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   overflow-wrap: anywhere;
 }
 
-.hamburger,
+.hamburger {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -120,11 +134,15 @@ button {
 }
 
 .hamburger:hover,
-.hamburger:focus-visible,
 .icon-btn:hover,
 .icon-btn:focus-visible {
   border-color: var(--line-bright);
   outline: 0;
+}
+
+.hamburger:focus-visible {
+  outline: 2px solid rgba(56, 189, 248, 0.35);
+  outline-offset: 2px;
 }
 
 .icon {
