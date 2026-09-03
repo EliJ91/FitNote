@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.2";
+  const APP_VERSION = "1.3.3";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -829,7 +829,7 @@
           ${rows.map((row, index) => renderExerciseCard(row, index)).join("")}
         </div>
         <div class="bottom-actions">
-          <button class="btn btn-secondary action-add" type="button" data-action="add-exercise">${iconSvg("plusCircle")}<span>Add Exercise</span></button>
+          ${editMode ? `<button class="btn btn-secondary action-add" type="button" data-action="add-exercise">${iconSvg("plusCircle")}<span>Add Exercise</span></button>` : ""}
           <button class="btn btn-primary complete-btn" type="button" data-action="save-routine">${iconSvg(editMode ? "check" : "checkCircle")}<span>${editMode ? "Save Changes" : session?.status === "completed" ? "Update Workout" : "Complete Workout"}</span></button>
         </div>
         <div class="scroll-float" data-scroll-float></div>
