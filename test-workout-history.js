@@ -72,7 +72,7 @@ function rows(data, session) {
 
 {
   let data = migrated();
-  data.routines.Core = [{ exercise: "Plank", weight: "0", reps: "3x45 sec", weight_offset: "0", track_pb: false }];
+  data.routines.Core = [{ exercise: "Plank", weight: "0", reps: "3x45 sec", track_pb: false }];
   data = history.ensureHistoricalModel(data, { today: TODAY });
   const session = history.startWorkoutSession(data, "Core", { today: TODAY, now: new Date("2026-09-02T13:00:00.000Z") });
   const plank = rows(data, session).find((row) => row.exercise === "Plank");

@@ -18,7 +18,7 @@ Then open `http://localhost:8080`.
 - Start today's workout from the most recent completed workout of the same routine
 - Save actual individual workout sets with weight, reps, completion status, and timestamps
 - Reopen the same day's workout to add more sets later
-- Track weight, reps, set weight offsets, and PB-marked exercises
+- Track weight, reps, completed sets, and PB-marked exercises
 - View routine and exercise trend graphs
 - View PB History beneath the graph
 - Export all browser data to JSON
@@ -27,8 +27,6 @@ Then open `http://localhost:8080`.
 - Start from a sign-in/guest landing screen; guest mode uses browser storage only
 - Creating new routines requires Google sign-in
 - Installable PWA shell with offline caching
-
-The previous Python desktop app is still included for reference, but active development is now focused on the browser version.
 
 ## Workout History
 

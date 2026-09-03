@@ -4,35 +4,31 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.2.0";
+  const APP_VERSION = "1.3.0";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
-  const PLATE_DENOMINATIONS = [45, 35, 25, 10, 5, 2.5];
-  const DEFAULT_WEIGHT_OFFSET = "45";
-  const NEW_EXERCISE_OFFSET = "0";
-
   const INITIAL_DATA = {
     settings: { always_on_top: false },
-    selected_routine: "Push Day",
+    selected_routine: "Pull Day",
     routines: {
       "Push Day": [
-        { exercise: "Incline Barbell Press", weight: "125", reps: "3x8", weight_offset: "45", track_pb: false },
-        { exercise: "Seated Shoulder Press", weight: "67.5", reps: "3x10", weight_offset: "45", track_pb: false },
-        { exercise: "Cable Chest Fly", weight: "40", reps: "3x8", weight_offset: "20", track_pb: false },
-        { exercise: "Cable Lateral Raise", weight: "15", reps: "3x8", weight_offset: "0", track_pb: false },
-        { exercise: "Cable Tricep Pushdown", weight: "45", reps: "3x10", weight_offset: "0", track_pb: false },
-        { exercise: "Overhead Cable Tricep Extension", weight: "40", reps: "2x15", weight_offset: "0", track_pb: false },
+        { exercise: "Incline Barbell Press", weight: "125", reps: "3x8", track_pb: false },
+        { exercise: "Seated Shoulder Press", weight: "67.5", reps: "3x10", track_pb: false },
+        { exercise: "Cable Chest Fly", weight: "40", reps: "3x8", track_pb: false },
+        { exercise: "Cable Lateral Raise", weight: "15", reps: "3x8", track_pb: false },
+        { exercise: "Cable Tricep Pushdown", weight: "45", reps: "3x10", track_pb: false },
+        { exercise: "Overhead Cable Tricep Extension", weight: "40", reps: "2x15", track_pb: false },
       ],
       "Pull Day": [
-        { exercise: "Barbell Row", weight: "100", reps: "3x8", weight_offset: "45", track_pb: false },
-        { exercise: "Lat Pulldown", weight: "100", reps: "3x6", weight_offset: "45", track_pb: false },
-        { exercise: "Cable Row 1 Arm", weight: "40", reps: "3x8", weight_offset: "0", track_pb: false },
-        { exercise: "Face Pulls", weight: "40", reps: "3x12", weight_offset: "0", track_pb: false },
-        { exercise: "Preacher Curl", weight: "30", reps: "3x10", weight_offset: "0", track_pb: false },
-        { exercise: "Hammer Curl 1 Arm", weight: "15", reps: "2x10", weight_offset: "0", track_pb: false },
+        { exercise: "Barbell Row", weight: "100", reps: "3x8", track_pb: false },
+        { exercise: "Lat Pulldown", weight: "100", reps: "3x6", track_pb: false },
+        { exercise: "Cable Row 1 Arm", weight: "40", reps: "3x8", track_pb: false },
+        { exercise: "Face Pulls", weight: "40", reps: "3x12", track_pb: false },
+        { exercise: "Preacher Curl", weight: "30", reps: "3x10", track_pb: false },
+        { exercise: "Hammer Curl 1 Arm", weight: "15", reps: "2x10", track_pb: false },
       ],
     },
     routine_logs: [],
@@ -182,12 +178,30 @@
 
   function iconSvg(name) {
     const icons = {
+      calendar:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M3 10h18"></path><path d="M8 14h.01"></path><path d="M12 14h.01"></path><path d="M16 14h.01"></path></svg>',
+      check:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>',
+      checkCircle:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M16 9l-5.5 5.5L8 12"></path></svg>',
+      chevronDown:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>',
       edit:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l11-11-4-4L4 16v4z"></path><path d="M14 6l4 4"></path></svg>',
       cancel:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>',
+      minus:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"></path></svg>',
+      more:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.4"></circle><circle cx="12" cy="12" r="1.4"></circle><circle cx="12" cy="19" r="1.4"></circle></svg>',
+      plus:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>',
+      plusCircle:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>',
       trash:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"></path><path d="M9 7V5h6v2"></path><path d="M7 7l1 13h8l1-13"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg>',
+      trend:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 7-8"></path><path d="M14 7h6v6"></path></svg>',
       up:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>',
       down:
@@ -226,62 +240,6 @@
     if (String(value).trim() === "") return false;
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed >= 0 && isTwoPointFiveStep(parsed);
-  }
-
-  function isValidOffset(value) {
-    const text = String(value ?? "").trim();
-    if (!text) return true;
-    const parsed = Number(text);
-    return Number.isFinite(parsed) && parsed >= 0 && isTwoPointFiveStep(parsed);
-  }
-
-  function normalizeExercise(row = {}) {
-    const weight = row.weight ?? row.target_weight ?? "";
-    return {
-      exercise: String(row.exercise || "New Exercise"),
-      weight: weight === "" ? "" : formatWeight(weight),
-      reps: String(row.reps ?? row.target_reps ?? ""),
-      weight_offset: String(row.weight_offset ?? DEFAULT_WEIGHT_OFFSET),
-      track_pb: boolFromData(row.track_pb),
-    };
-  }
-
-  function routinesFromLegacy(data) {
-    const groups = data.groups || INITIAL_DATA.routines;
-    const routines = {};
-    Object.entries(groups).forEach(([name, rows]) => {
-      routines[name] = Array.isArray(rows) ? rows.map(normalizeExercise) : [];
-    });
-    return Object.keys(routines).length ? routines : clone(INITIAL_DATA.routines);
-  }
-
-  function logsFromLegacy(data) {
-    const byKey = new Map();
-    (data.sets || []).forEach((item) => {
-      const routine = String(item.routine || item.exercise_group || "Imported");
-      const logDate = String(item.date || TODAY);
-      const key = `${logDate}::${routine}`;
-      if (!byKey.has(key)) byKey.set(key, { date: logDate, routine, exercises: [], pb_entries: [] });
-      byKey.get(key).exercises.push(normalizeExercise(item));
-    });
-    return Array.from(byKey.values());
-  }
-
-  function normalizeLog(log = {}) {
-    const exercises = Array.isArray(log.exercises) ? log.exercises.map(normalizeExercise) : [];
-    const pbEntries = Array.isArray(log.pb_entries)
-      ? log.pb_entries.map((entry) => ({
-          exercise: String(entry.exercise || ""),
-          weight: formatWeight(entry.weight ?? ""),
-          reps: String(entry.reps ?? ""),
-        }))
-      : [];
-    return {
-      date: String(log.date || TODAY),
-      routine: String(log.routine || "Workout"),
-      exercises,
-      pb_entries: pbEntries,
-    };
   }
 
   function normalizeData(input) {
@@ -846,7 +804,10 @@
           <p class="section-label">Routine</p>
           <div class="routine-control-row">
             <div class="routine-selector">
-              <button class="select-like" type="button" data-action="toggle-routine-menu">${escapeHtml(currentRoutine())}</button>
+              <button class="select-like" type="button" data-action="toggle-routine-menu">
+                <span class="select-main">${iconSvg("calendar")}<span>${escapeHtml(currentRoutine())}</span></span>
+                ${iconSvg("chevronDown")}
+              </button>
               <div class="routine-menu" data-routine-menu hidden>
                 ${routineNames()
                   .map(
@@ -866,8 +827,8 @@
           ${rows.map((row, index) => renderExerciseCard(row, index)).join("")}
         </div>
         <div class="bottom-actions">
-          <button class="btn btn-secondary" type="button" data-action="add-exercise">Add Exercise</button>
-          <button class="btn btn-primary" type="button" data-action="save-routine">${editMode ? "Save Changes" : session?.status === "completed" ? "Update Workout" : "Complete Workout"}</button>
+          <button class="btn btn-secondary action-add" type="button" data-action="add-exercise">${iconSvg("plusCircle")}<span>Add Exercise</span></button>
+          <button class="btn btn-primary complete-btn" type="button" data-action="save-routine">${iconSvg(editMode ? "check" : "checkCircle")}<span>${editMode ? "Save Changes" : session?.status === "completed" ? "Update Workout" : "Complete Workout"}</span></button>
         </div>
         <div class="scroll-float" data-scroll-float></div>
       </section>
@@ -875,93 +836,54 @@
   }
 
   function renderExerciseCard(row, index) {
-    const editable = editMode;
-    if (!editable) return renderWorkoutExerciseCard(row, index);
+    if (!editMode) return renderWorkoutExerciseCard(row, index);
     return `
-      <article class="exercise-card" data-index="${index}">
-        <div class="exercise-side">
-          ${renderPlate(row)}
-          ${
-            editable
-              ? `<div class="move-controls">
-                  <button class="move-btn" type="button" data-action="move-exercise" data-direction="up" data-index="${index}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
-                  <button class="move-btn" type="button" data-action="move-exercise" data-direction="down" data-index="${index}" aria-label="Move exercise down" title="Move down" ${index === currentRows().length - 1 ? "disabled" : ""}>${iconSvg("down")}</button>
-                </div>`
-              : ""
-          }
-        </div>
-        <div class="exercise-detail">
-          <div class="card-title-row">
-            ${
-              editable
-                ? '<div class="edit-actions"><button class="delete-mini" type="button" data-action="delete-exercise" data-index="' +
-                  index +
-                  '">X</button><button class="pb-btn ' +
-                  (row.track_pb ? "active" : "") +
-                  '" type="button" data-action="toggle-pb" data-index="' +
-                  index +
-                  '">PB</button></div>'
-                : '<h2 class="exercise-title">' +
-                  escapeHtml(row.exercise) +
-                  '</h2><button class="pb-btn ' +
-                  (row.track_pb ? "active" : "") +
-                  '" type="button" data-action="toggle-pb" data-index="' +
-                  index +
-                  '">PB</button>'
-            }
+      <article class="exercise-card template-card" data-index="${index}">
+        <div class="card-title-row">
+          <input class="text-input exercise-name-input" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}" aria-label="Exercise name">
+          <div class="mini-actions">
+            <button class="icon-btn card-icon-btn" type="button" data-action="move-exercise" data-direction="up" data-index="${index}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
+            <button class="icon-btn card-icon-btn" type="button" data-action="move-exercise" data-direction="down" data-index="${index}" aria-label="Move exercise down" title="Move down" ${index === currentRows().length - 1 ? "disabled" : ""}>${iconSvg("down")}</button>
+            <button class="delete-mini icon-only" type="button" data-action="delete-exercise" data-index="${index}" aria-label="Delete exercise" title="Delete Exercise">${iconSvg("trash")}</button>
+            <button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-index="${index}">PB</button>
           </div>
-          ${
-            editable
-              ? `<input class="text-input full-row" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}">`
-              : ""
-          }
-          <div class="field-label">Weight</div>
+        </div>
+        <div class="template-grid full-row">
+          <div class="field-label">Weight (lb)</div>
           <div class="field-label">Reps</div>
-          ${fieldOrBox(row, index, "weight", "lbs", editable)}
-          ${fieldOrBox(row, index, "reps", "", editable)}
-          ${
-            editable
-              ? `<div class="field-label full-row">Set Weight Offset</div>
-                 <input class="text-input full-row" data-field="weight_offset" data-index="${index}" value="${escapeAttr(row.weight_offset)}">`
-              : ""
-          }
+          <input class="text-input template-input" inputmode="decimal" data-field="weight" data-index="${index}" value="${escapeAttr(row.weight)}" aria-label="Template weight">
+          <input class="text-input template-input" data-field="reps" data-index="${index}" value="${escapeAttr(row.reps)}" aria-label="Template reps">
         </div>
       </article>
     `;
   }
 
   function renderWorkoutExerciseCard(row, index) {
-    const firstSet = row.sets[0] || { weight: "", reps: "" };
     const previous = row.previous_sets.length ? workoutHistory.formatSets(row.previous_sets) : "No previous workout";
     return `
       <article class="exercise-card workout-card" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">
-        <div class="exercise-side">
-          ${renderPlate({ weight: firstSet.weight, weight_offset: row.weight_offset })}
-          <div class="move-controls">
-            <button class="move-btn" type="button" data-action="move-exercise" data-direction="up" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
-            <button class="move-btn" type="button" data-action="move-exercise" data-direction="down" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" aria-label="Move exercise down" title="Move down" ${index === currentWorkoutRows().length - 1 ? "disabled" : ""}>${iconSvg("down")}</button>
+        <div class="card-title-row">
+          <h2 class="exercise-title">${escapeHtml(row.exercise)}</h2>
+          <div class="mini-actions">
+            <button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">PB</button>
+            <button class="icon-btn more-btn" type="button" data-action="toggle-exercise-menu" aria-label="Exercise actions" title="Exercise Actions">${iconSvg("more")}</button>
+          </div>
+          <div class="exercise-menu" data-exercise-menu hidden>
+            <button class="card-menu-item" type="button" data-action="move-exercise" data-direction="up" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" ${index === 0 ? "disabled" : ""}>Move Up</button>
+            <button class="card-menu-item" type="button" data-action="move-exercise" data-direction="down" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" ${index === currentWorkoutRows().length - 1 ? "disabled" : ""}>Move Down</button>
+            <button class="card-menu-item danger" type="button" data-action="delete-workout-exercise" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">Delete Exercise</button>
           </div>
         </div>
-        <div class="exercise-detail workout-detail">
-          <div class="card-title-row">
-            <h2 class="exercise-title">${escapeHtml(row.exercise)}</h2>
-            <div class="mini-actions">
-              <button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">PB</button>
-              <button class="delete-mini" type="button" data-action="delete-workout-exercise" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">X</button>
-            </div>
-          </div>
-          <input class="text-input full-row" data-workout-exercise-field="exercise_name" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" value="${escapeAttr(row.exercise)}">
-          <div class="previous-line full-row">Previous: ${escapeHtml(previous)}</div>
-          <div class="set-grid full-row">
-            <div class="set-head">Set</div>
-            <div class="set-head">Weight</div>
-            <div class="set-head">Reps</div>
-            <div class="set-head">Done</div>
-            <div class="set-head"></div>
-            ${row.sets.map((set) => renderSetRow(set)).join("")}
-          </div>
-          <button class="btn btn-secondary add-set-btn full-row" type="button" data-action="add-set" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">+ Add Set</button>
+        <div class="previous-line full-row">${iconSvg("trend")}<span>Previous: ${escapeHtml(previous)}</span></div>
+        <div class="set-grid full-row">
+          <div class="set-head">Set</div>
+          <div class="set-head">Weight (lb)</div>
+          <div class="set-head">Reps</div>
+          <div class="set-head">Done</div>
+          <div class="set-head"></div>
+          ${row.sets.map((set) => renderSetRow(set)).join("")}
         </div>
+        <button class="btn btn-secondary add-set-btn full-row" type="button" data-action="add-set" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">${iconSvg("plus")}<span>Add Set</span></button>
       </article>
     `;
   }
@@ -969,104 +891,17 @@
   function renderSetRow(set) {
     return `
       <div class="set-number">${escapeHtml(set.set_number)}</div>
-      <input class="text-input set-input" data-set-field="weight" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.weight)}">
-      <input class="text-input set-input" data-set-field="reps" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.reps)}">
-      <label class="set-check"><input type="checkbox" data-set-complete data-set-id="${escapeAttr(set.id)}" ${set.completed ? "checked" : ""}></label>
-      <button class="delete-mini set-delete" type="button" data-action="delete-set" data-set-id="${escapeAttr(set.id)}">X</button>
-    `;
-  }
-
-  function fieldOrBox(row, index, field, suffix, editable) {
-    if (editable) {
-      return `<input class="text-input" data-field="${field}" data-index="${index}" value="${escapeAttr(row[field])}">`;
-    }
-    return `
-      <div class="value-box">
-        <span class="value-main">${escapeHtml(row[field])}</span>
-        ${suffix ? `<span class="value-suffix">${escapeHtml(suffix)}</span>` : ""}
+      <div class="weight-stepper">
+        <button class="step-btn" type="button" data-action="adjust-set-weight" data-delta="-5" data-set-id="${escapeAttr(set.id)}" aria-label="Decrease weight" title="Decrease Weight">${iconSvg("minus")}</button>
+        <input class="text-input set-input weight-input" inputmode="decimal" data-set-field="weight" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.weight)}" aria-label="Set weight">
+        <button class="step-btn" type="button" data-action="adjust-set-weight" data-delta="5" data-set-id="${escapeAttr(set.id)}" aria-label="Increase weight" title="Increase Weight">${iconSvg("plus")}</button>
       </div>
-    `;
-  }
-
-  function plateCountsForWeight(weightValue, offsetValue) {
-    const weight = Number(weightValue);
-    const offset = Number(String(offsetValue ?? "").trim() || 0);
-    if (!Number.isFinite(weight) || !Number.isFinite(offset) || offset < 0) {
-      return { sideWeight: 0, counts: PLATE_DENOMINATIONS.map((plate) => [plate, 0]) };
-    }
-    const roundedTotal = Math.floor(weight / 5) * 5;
-    let sideWeight = Math.max((roundedTotal - offset) / 2, 0);
-    let remaining = sideWeight;
-    const counts = PLATE_DENOMINATIONS.map((plate) => {
-      const count = Math.floor((remaining + 0.00001) / plate);
-      remaining = Math.round((remaining - plate * count) * 100) / 100;
-      return [plate, count];
-    });
-    return { sideWeight, counts };
-  }
-
-  function renderPlate(row) {
-    const { sideWeight, counts } = plateCountsForWeight(row.weight, row.weight_offset);
-    const plates = [];
-    counts.forEach(([plate, count]) => {
-      for (let i = 0; i < count; i += 1) plates.push(plate);
-    });
-    plates.sort((a, b) => b - a);
-    const cardWidth = 150;
-    const centerY = 64;
-    const shaftWidth = 16;
-    const stopWidth = 7;
-    const tailWidth = 24;
-    const plateGap = 6;
-    const dimensions = plateDimensions();
-    const stackWidth = plates.reduce((total, plate) => total + dimensions[plate][0], 0) + plateGap * Math.max(plates.length - 1, 0);
-    const emptyStackWidth = 52;
-    const loadedWidth = shaftWidth + stopWidth + (plates.length ? stackWidth + tailWidth : emptyStackWidth);
-    const startX = Math.max(8, Math.round((cardWidth - loadedWidth) / 2));
-    const stopX = startX + shaftWidth;
-    const sleeveStart = stopX + stopWidth;
-    const sleeveEnd = plates.length ? sleeveStart + stackWidth + tailWidth : stopX + stopWidth + emptyStackWidth;
-    let nextPlateX = sleeveStart;
-
-    const plateMarkup = plates
-      .map((plate, index) => {
-        const [width, height] = dimensions[plate];
-        const x = nextPlateX;
-        nextPlateX += width + plateGap;
-        return renderPlatePiece(plate, index, x, centerY, width, height);
-      })
-      .join("");
-
-    return `
-      <div class="plate-card" data-plate>
-        <div class="plate-title">Barbels: ${escapeHtml(formatWeight(sideWeight))}lb</div>
-        <div class="barbell-stack">
-          <div class="barbell-part shaft-left" style="left:${startX}px;top:${centerY - 2}px;width:${shaftWidth}px"></div>
-          <div class="barbell-part plate-stop" style="left:${stopX}px;top:${centerY - 14}px;width:${stopWidth}px;height:28px"></div>
-          <div class="barbell-part sleeve" style="left:${sleeveStart}px;top:${centerY - 5}px;width:${Math.max(0, sleeveEnd - sleeveStart)}px;height:10px"></div>
-          ${plateMarkup}
-        </div>
-      </div>
-    `;
-  }
-
-  function plateDimensions() {
-    return {
-      45: [18, 80],
-      35: [16, 68],
-      25: [14, 58],
-      10: [11, 44],
-      5: [9, 34],
-      2.5: [8, 26],
-    };
-  }
-
-  function renderPlatePiece(plate, index, x, centerY, width, height) {
-    const shade = index % 2 === 0 ? "light" : "mid";
-    const top = centerY - height / 2;
-    return `
-      <div class="plate ${shade}" style="left:${x}px;top:${top}px;width:${width}px;height:${height}px"></div>
-      <div class="plate-label ${shade}" style="left:${x - 5}px;top:106px;width:${width + 10}px">${escapeHtml(formatWeight(plate))}</div>
+      <input class="text-input set-input reps-input" inputmode="numeric" data-set-field="reps" data-set-id="${escapeAttr(set.id)}" value="${escapeAttr(set.reps)}" aria-label="Set reps">
+      <label class="set-check">
+        <input type="checkbox" data-set-complete data-set-id="${escapeAttr(set.id)}" ${set.completed ? "checked" : ""}>
+        <span class="set-check-visual">${iconSvg("check")}</span>
+      </label>
+      <button class="delete-mini set-delete" type="button" data-action="delete-set" data-set-id="${escapeAttr(set.id)}" aria-label="Delete set" title="Delete Set">${iconSvg("trash")}</button>
     `;
   }
 
@@ -1110,11 +945,26 @@
         const row = currentRows()[Number(input.dataset.index)];
         row[input.dataset.field] = input.value;
         saveState();
-        const card = input.closest(".exercise-card");
-        const plate = card?.querySelector("[data-plate]");
-        if (plate && ["weight", "weight_offset"].includes(input.dataset.field)) {
-          plate.outerHTML = renderPlate(row);
-        }
+      });
+    });
+
+    app.querySelectorAll("[data-action='toggle-exercise-menu']").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const card = button.closest(".exercise-card");
+        const menu = card?.querySelector("[data-exercise-menu]");
+        if (!menu) return;
+        app.querySelectorAll("[data-exercise-menu]").forEach((otherMenu) => {
+          if (otherMenu !== menu) otherMenu.hidden = true;
+        });
+        menu.hidden = !menu.hidden;
+      });
+    });
+
+    app.querySelector(".routine-page").addEventListener("click", (event) => {
+      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu]")) return;
+      app.querySelectorAll("[data-exercise-menu]").forEach((menu) => {
+        menu.hidden = true;
       });
     });
 
@@ -1151,27 +1001,25 @@
       input.addEventListener("input", () => {
         workoutHistory.updateWorkoutSet(state, input.dataset.setId, input.dataset.setField, input.value);
         saveState();
-        if (input.dataset.setField === "weight") {
-          const card = input.closest(".exercise-card");
-          const row = workoutHistory
-            .sessionRows(state, currentWorkoutSession().id)
-            .find((item) => item.workout_exercise_id === card?.dataset.workoutExerciseId);
-          const plate = card?.querySelector("[data-plate]");
-          if (plate && row) plate.outerHTML = renderPlate({ weight: row.sets[0]?.weight || "", weight_offset: row.weight_offset });
-        }
+      });
+    });
+
+    app.querySelectorAll("[data-action='adjust-set-weight']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const set = state.workout_sets.find((item) => item.id === button.dataset.setId);
+        const currentWeight = Number(String(set?.weight || "").trim());
+        const delta = Number(button.dataset.delta || 0);
+        const nextWeight = Math.max(0, (Number.isFinite(currentWeight) ? currentWeight : 0) + delta);
+        const updatedSet = workoutHistory.updateWorkoutSet(state, button.dataset.setId, "weight", formatWeight(nextWeight));
+        saveState();
+        const input = button.closest(".weight-stepper")?.querySelector("[data-set-field='weight']");
+        if (input && updatedSet) input.value = updatedSet.weight;
       });
     });
 
     app.querySelectorAll("[data-set-complete]").forEach((input) => {
       input.addEventListener("change", () => {
         workoutHistory.updateWorkoutSet(state, input.dataset.setId, "completed", input.checked);
-        saveState();
-      });
-    });
-
-    app.querySelectorAll("[data-workout-exercise-field]").forEach((input) => {
-      input.addEventListener("input", () => {
-        workoutHistory.updateWorkoutExercise(state, input.dataset.workoutExerciseId, input.dataset.workoutExerciseField, input.value);
         saveState();
       });
     });
@@ -1255,8 +1103,8 @@
 
   function validateRows() {
     for (const row of currentRows()) {
-      if (!row.exercise.trim() || !row.reps.trim() || !isValidWeight(row.weight) || !isValidOffset(row.weight_offset)) {
-        showToast("Each exercise needs a name, reps, a weight, and a valid offset.");
+      if (!row.exercise.trim() || !row.reps.trim() || !isValidWeight(row.weight)) {
+        showToast("Each exercise needs a name, reps, and a valid weight.");
         return false;
       }
     }
@@ -1291,7 +1139,6 @@
       exercise: "New Exercise",
       weight: "",
       reps: "",
-      weight_offset: NEW_EXERCISE_OFFSET,
       track_pb: false,
     });
     saveState();
@@ -1384,7 +1231,7 @@
         status.textContent = "That routine already exists.";
         return;
       }
-      state.routines[name] = [{ exercise: "New Exercise", weight: "", reps: "", weight_offset: NEW_EXERCISE_OFFSET, track_pb: false }];
+      state.routines[name] = [{ exercise: "New Exercise", weight: "", reps: "", track_pb: false }];
       state.selected_routine = name;
       dataSelection = { kind: "routine", value: name };
       editMode = true;

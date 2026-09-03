@@ -8,8 +8,6 @@
   "use strict";
 
   const HISTORY_SCHEMA_VERSION = 2;
-  const DEFAULT_WEIGHT_OFFSET = "45";
-  const NEW_EXERCISE_OFFSET = "0";
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -66,7 +64,6 @@
       exercise: cleanText(row.exercise, "New Exercise"),
       weight: weight === "" ? "" : formatWeight(weight),
       reps: String(row.reps ?? row.target_reps ?? "").trim(),
-      weight_offset: String(row.weight_offset ?? DEFAULT_WEIGHT_OFFSET),
       track_pb: boolFromData(row.track_pb),
       active: row.active === undefined ? true : boolFromData(row.active),
     };
@@ -123,7 +120,13 @@
       ...clone(log),
       date: cleanText(log.date, todayIso()),
       routine: cleanText(log.routine, "Workout"),
-      exercises: Array.isArray(log.exercises) ? log.exercises.map((row) => ({ ...clone(row), ...normalizeExerciseRow(row) })) : [],
+      exercises: Array.isArray(log.exercises)
+        ? log.exercises.map((row) => {
+            const normalizedRow = { ...clone(row), ...normalizeExerciseRow(row) };
+            delete normalizedRow.weight_offset;
+            return normalizedRow;
+          })
+        : [],
       pb_entries: Array.isArray(log.pb_entries) ? clone(log.pb_entries) : [],
     }));
     const existingKeys = new Set(normalized.map((log) => `${log.date}::${log.routine}`));
@@ -154,7 +157,6 @@
       order: index + 1,
       default_weight: row.weight,
       default_reps: row.reps,
-      weight_offset: row.weight_offset,
       active: row.active !== false,
     }));
     if (existing) {
@@ -175,6 +177,24 @@
     data.workout_exercises = Array.isArray(data.workout_exercises) ? data.workout_exercises : [];
     data.workout_sets = Array.isArray(data.workout_sets) ? data.workout_sets : [];
     data.migration_metadata = data.migration_metadata && typeof data.migration_metadata === "object" ? data.migration_metadata : {};
+    data.routine_definitions.forEach((routine) => {
+      if (!routine || typeof routine !== "object") return;
+      (routine.exercises || []).forEach((exercise) => {
+        if (!exercise || typeof exercise !== "object") return;
+        delete exercise.weight_offset;
+      });
+    });
+    data.workout_exercises.forEach((exercise) => {
+      if (!exercise || typeof exercise !== "object") return;
+      delete exercise.weight_offset;
+    });
+    (data.routine_logs || []).forEach((log) => {
+      if (!log || typeof log !== "object") return;
+      (log.exercises || []).forEach((exercise) => {
+        if (!exercise || typeof exercise !== "object") return;
+        delete exercise.weight_offset;
+      });
+    });
   }
 
   function addLegacySession(data, log, logIndex) {
@@ -203,7 +223,6 @@
           exercise_id: exerciseId,
           exercise_name: row.exercise,
           order: exerciseIndex + 1,
-          weight_offset: row.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
           track_pb: boolFromData(row.track_pb),
           legacy: row.legacy || undefined,
         });
@@ -237,7 +256,7 @@
     data.routines = Object.keys(data.routines || {}).length ? data.routines : routinesFromLegacy(data);
     Object.keys(data.routines).forEach((name) => {
       data.routines[name] = Array.isArray(data.routines[name]) ? data.routines[name].map(normalizeExerciseRow) : [];
-      if (!data.routines[name].length) data.routines[name] = [normalizeExerciseRow({ exercise: "New Exercise", weight_offset: NEW_EXERCISE_OFFSET })];
+      if (!data.routines[name].length) data.routines[name] = [normalizeExerciseRow({ exercise: "New Exercise" })];
       ensureRoutineDefinition(data, name, data.routines[name]);
     });
     data.selected_routine = data.routines[data.selected_routine] ? data.selected_routine : data.selected_group || Object.keys(data.routines)[0];
@@ -306,7 +325,6 @@
         exercise_id: sourceExercise.exercise_id,
         exercise_name: sourceExercise.exercise_name,
         order: index + 1,
-        weight_offset: sourceExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
         track_pb: boolFromData(sourceExercise.track_pb),
         copied_from_workout_exercise_id: sourceExercise.id,
       });
@@ -337,7 +355,6 @@
         exercise_id: routineExercise.exercise_id,
         exercise_name: exercise?.name || "Exercise",
         order: index + 1,
-        weight_offset: routineExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
         track_pb: false,
       });
       parseSetScheme(routineExercise.default_reps).forEach((sourceSet, setIndex) => {
@@ -403,7 +420,6 @@
         workout_exercise_id: workoutExercise.id,
         exercise_id: workoutExercise.exercise_id,
         exercise: workoutExercise.exercise_name || exercise?.name || "Exercise",
-        weight_offset: workoutExercise.weight_offset ?? DEFAULT_WEIGHT_OFFSET,
         track_pb: boolFromData(workoutExercise.track_pb),
         sets: setsForWorkoutExercise(data, workoutExercise.id),
         previous_sets: previousSetsForExercise(data, session.routine_name, workoutExercise.exercise_id, sessionId),
@@ -467,15 +483,6 @@
     return set;
   }
 
-  function updateWorkoutExercise(data, workoutExerciseId, field, value) {
-    const row = data.workout_exercises.find((item) => item.id === workoutExerciseId);
-    if (!row) return null;
-    if (field === "exercise_name") row.exercise_name = cleanText(value, "Exercise");
-    if (field === "weight_offset") row.weight_offset = formatWeight(value || NEW_EXERCISE_OFFSET);
-    if (field === "track_pb") row.track_pb = boolFromData(value);
-    return row;
-  }
-
   function addWorkoutExercise(data, sessionId, name = "New Exercise") {
     const sessionExercises = exercisesForSession(data, sessionId);
     const exerciseId = ensureExercise(data, { exercise: name, active: true });
@@ -485,7 +492,6 @@
       exercise_id: exerciseId,
       exercise_name: cleanText(name, "New Exercise"),
       order: sessionExercises.length + 1,
-      weight_offset: NEW_EXERCISE_OFFSET,
       track_pb: false,
     };
     data.workout_exercises.push(workoutExercise);
@@ -525,7 +531,6 @@
       exercise: row.exercise,
       weight: row.sets[0] ? formatWeight(row.sets[0].weight) : "",
       reps: formatSetSummary(row.sets),
-      weight_offset: row.weight_offset,
       track_pb: row.track_pb,
       workout_exercise_id: row.workout_exercise_id,
       sets: row.sets.map((set) => ({
@@ -576,7 +581,6 @@
     addWorkoutSet,
     deleteWorkoutSet,
     updateWorkoutSet,
-    updateWorkoutExercise,
     addWorkoutExercise,
     deleteWorkoutExercise,
     moveWorkoutExercise,
