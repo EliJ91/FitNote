@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.4";
+  const APP_VERSION = "1.3.5";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -206,6 +206,14 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path></svg>',
       down:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"></path><path d="M19 12l-7 7-7-7"></path></svg>',
+      download:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>',
+      upload:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21V9"></path><path d="m17 14-5-5-5 5"></path><path d="M5 3h14"></path></svg>',
+      checkSquare:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="m8 12 3 3 5-6"></path></svg>',
+      square:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>',
     };
     return icons[name] || "";
   }
@@ -1294,11 +1302,15 @@
       .join("");
     return `
       <section class="history-page">
-        <div class="btn-row">
-          <button class="btn btn-secondary" type="button" data-action="export-data">Export All</button>
-          <button class="btn btn-secondary" type="button" data-action="import-data">Import</button>
-          <button class="btn btn-secondary" type="button" data-action="select-all">Select All</button>
-          <button class="btn btn-secondary" type="button" data-action="deselect-all">Deselect All</button>
+        <div class="history-actions">
+          <div class="history-action-row">
+            <button class="btn btn-secondary history-action" type="button" data-action="export-data">${iconSvg("download")}<span>Export</span></button>
+            <button class="btn btn-secondary history-action" type="button" data-action="import-data">${iconSvg("upload")}<span>Import</span></button>
+          </div>
+          <div class="history-action-row">
+            <button class="btn btn-secondary history-action" type="button" data-action="select-all">${iconSvg("checkSquare")}<span>Select All</span></button>
+            <button class="btn btn-secondary history-action" type="button" data-action="deselect-all">${iconSvg("square")}<span>Deselect</span></button>
+          </div>
         </div>
         <div class="history-list">
           <table>
@@ -1306,7 +1318,7 @@
             <tbody>${rows || '<tr><td colspan="4" class="muted">No saved workouts yet.</td></tr>'}</tbody>
           </table>
         </div>
-        <button class="btn btn-danger" type="button" data-action="delete-history">Delete</button>
+        <button class="btn btn-danger history-delete" type="button" data-action="delete-history">${iconSvg("trash")}<span>Delete</span></button>
       </section>
     `;
   }

@@ -808,6 +808,42 @@ button {
   align-items: center;
 }
 
+.history-actions {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(165deg, rgba(12, 29, 50, 0.9), rgba(4, 13, 25, 0.9)),
+    rgba(7, 20, 38, 0.74);
+}
+
+.history-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.history-action {
+  min-height: 46px;
+  padding: 10px 12px;
+}
+
+.history-action .icon,
+.history-delete .icon {
+  width: 19px;
+  height: 19px;
+}
+
+.history-action .icon {
+  color: var(--blue);
+}
+
+.history-delete {
+  min-height: 46px;
+}
+
 .form-page,
 .settings-page,
 .history-page,
@@ -827,7 +863,7 @@ button {
 }
 
 .history-page {
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .data-page {
