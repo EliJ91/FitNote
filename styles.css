@@ -741,21 +741,52 @@ button.is-pressing:not([disabled]) {
 }
 
 .exercise-name-controls {
+  position: relative;
   min-width: 0;
-  display: grid;
-  gap: 8px;
 }
 
-.exercise-name-select {
-  min-height: 42px;
+.exercise-option-menu {
+  position: absolute;
+  z-index: 25;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: min(260px, 48dvh);
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #081424;
+  color: var(--text);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.4);
+}
+
+.exercise-option-menu[hidden] {
+  display: none;
+}
+
+.exercise-option {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  display: block;
+  padding: 10px 12px;
   text-align: left;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 750;
+  cursor: pointer;
+}
+
+.exercise-option:hover,
+.exercise-option:focus-visible {
+  background: #13253d;
+  color: var(--text);
+  outline: 0;
 }
 
 .exercise-name-input {
-  min-height: 56px;
-  resize: vertical;
+  min-height: 44px;
   text-align: left;
   font-size: 1.08rem;
   font-weight: 800;

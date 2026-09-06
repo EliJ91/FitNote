@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.12";
+  const APP_VERSION = "1.3.13";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -874,21 +874,19 @@
   function renderExerciseCard(row, index) {
     if (!editMode) return renderWorkoutExerciseCard(row, index);
     const exerciseOptions = existingExerciseOptions();
-    const selectedId = selectedExerciseId(row);
     return `
       <article class="exercise-card template-card" data-index="${index}">
         <div class="card-title-row">
-          <div class="exercise-name-controls">
-            <select class="text-input exercise-name-select" data-action="select-existing-exercise" data-index="${index}" aria-label="Select existing exercise">
-              <option value="">New exercise</option>
+          <div class="exercise-name-controls" data-exercise-picker>
+            <input class="text-input exercise-name-input" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}" autocomplete="off" aria-label="Exercise name">
+            <div class="exercise-option-menu" data-exercise-option-menu hidden>
               ${exerciseOptions
                 .map(
                   (exercise) =>
-                    `<option value="${escapeAttr(exercise.id)}" ${exercise.id === selectedId ? "selected" : ""}>${escapeHtml(exercise.name)}</option>`
+                    `<button class="exercise-option" type="button" data-action="select-existing-exercise" data-index="${index}" data-exercise-id="${escapeAttr(exercise.id)}" data-exercise-name="${escapeAttr(exercise.name)}">${escapeHtml(exercise.name)}</button>`
                 )
                 .join("")}
-            </select>
-            <textarea class="text-input exercise-name-input" data-field="exercise" data-index="${index}" rows="2" aria-label="Exercise name">${escapeHtml(row.exercise)}</textarea>
+            </div>
           </div>
           <div class="mini-actions">
             <button class="icon-btn card-icon-btn" type="button" data-action="move-exercise" data-direction="up" data-index="${index}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
@@ -1002,21 +1000,30 @@
         if (input.dataset.field === "exercise") {
           const existing = findExistingExerciseByName(input.value);
           row.exercise_id = existing ? existing.id : "";
-          const select = input.closest(".exercise-card")?.querySelector("[data-action='select-existing-exercise']");
-          if (select) select.value = row.exercise_id;
+          filterExerciseOptions(input);
         }
         saveState();
       });
     });
 
-    app.querySelectorAll("[data-action='select-existing-exercise']").forEach((select) => {
-      select.addEventListener("change", () => {
-        const row = currentRows()[Number(select.dataset.index)];
-        const exercise = existingExerciseOptions().find((item) => item.id === select.value);
-        row.exercise_id = exercise?.id || "";
-        if (exercise) row.exercise = exercise.name;
-        const input = select.closest(".exercise-card")?.querySelector("[data-field='exercise']");
+    app.querySelectorAll(".exercise-name-input").forEach((input) => {
+      input.addEventListener("focus", () => filterExerciseOptions(input));
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape") return;
+        const menu = input.closest("[data-exercise-picker]")?.querySelector("[data-exercise-option-menu]");
+        if (menu) menu.hidden = true;
+      });
+    });
+
+    app.querySelectorAll("[data-action='select-existing-exercise']").forEach((button) => {
+      button.addEventListener("click", () => {
+        const row = currentRows()[Number(button.dataset.index)];
+        row.exercise_id = button.dataset.exerciseId || "";
+        row.exercise = button.dataset.exerciseName || row.exercise;
+        const input = button.closest(".exercise-card")?.querySelector("[data-field='exercise']");
         if (input) input.value = row.exercise;
+        const menu = button.closest("[data-exercise-option-menu]");
+        if (menu) menu.hidden = true;
         saveState();
       });
     });
@@ -1035,8 +1042,11 @@
     });
 
     app.querySelector(".routine-page").addEventListener("click", (event) => {
-      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu], [data-action='toggle-routine-actions'], [data-routine-actions-menu]")) return;
+      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu], [data-action='toggle-routine-actions'], [data-routine-actions-menu], [data-exercise-picker]")) return;
       app.querySelectorAll("[data-exercise-menu]").forEach((menu) => {
+        menu.hidden = true;
+      });
+      app.querySelectorAll("[data-exercise-option-menu]").forEach((menu) => {
         menu.hidden = true;
       });
       const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
@@ -1143,6 +1153,23 @@
     [rows[index], rows[targetIndex]] = [rows[targetIndex], rows[index]];
     saveState();
     render();
+  }
+
+  function filterExerciseOptions(input) {
+    const menu = input.closest("[data-exercise-picker]")?.querySelector("[data-exercise-option-menu]");
+    if (!menu) return;
+    app.querySelectorAll("[data-exercise-option-menu]").forEach((otherMenu) => {
+      if (otherMenu !== menu) otherMenu.hidden = true;
+    });
+    const query = input.value.trim().toLocaleLowerCase();
+    let visibleCount = 0;
+    menu.querySelectorAll("[data-action='select-existing-exercise']").forEach((option) => {
+      const name = option.dataset.exerciseName || "";
+      const visible = !query || name.toLocaleLowerCase().includes(query);
+      option.hidden = !visible;
+      if (visible) visibleCount += 1;
+    });
+    menu.hidden = visibleCount === 0;
   }
 
   function toggleEditMode() {
@@ -1912,7 +1939,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=33", { updateViaCache: "none" })
+        .register("sw.js?v=34", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
