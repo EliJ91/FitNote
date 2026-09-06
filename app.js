@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.14";
+  const APP_VERSION = "1.3.15";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -997,6 +997,8 @@
       input.addEventListener("input", () => {
         const row = currentRows()[Number(input.dataset.index)];
         row[input.dataset.field] = input.value;
+        input.classList.remove("is-invalid");
+        input.closest(".exercise-card")?.classList.remove("has-invalid");
         if (input.dataset.field === "exercise") {
           const existing = findExistingExerciseByName(input.value);
           row.exercise_id = existing ? existing.id : "";
@@ -1230,11 +1232,23 @@
   }
 
   function validateRows() {
-    for (const row of currentRows()) {
-      if (!row.exercise.trim() || !row.reps.trim() || !isValidWeight(row.weight)) {
+    clearInvalidFields();
+    let firstInvalid = null;
+    for (const [index, row] of currentRows().entries()) {
+      const exercise = String(row.exercise ?? "").trim();
+      const reps = String(row.reps ?? "").trim();
+      const invalidFields = [];
+      if (!exercise) invalidFields.push("exercise");
+      if (!isValidWeight(row.weight)) invalidFields.push("weight");
+      if (!reps) invalidFields.push("reps");
+      if (invalidFields.length) {
+        markInvalidFields(index, invalidFields);
+        if (!firstInvalid) firstInvalid = { index, invalidFields };
+      }
+    }
+    if (firstInvalid) {
         showToast("Each exercise needs a name, reps, and a valid weight.");
         return false;
-      }
     }
     return true;
   }
@@ -1248,6 +1262,27 @@
         const existing = findExistingExerciseByName(input.value);
         row.exercise_id = existing ? existing.id : "";
       }
+    });
+    currentRows().forEach((row) => {
+      const exercise = String(row.exercise ?? "").trim();
+      if (exercise || !row.exercise_id) return;
+      const existing = (state.exercises || []).find((item) => item.id === row.exercise_id);
+      if (existing?.name) row.exercise = existing.name;
+    });
+  }
+
+  function clearInvalidFields() {
+    app.querySelectorAll(".is-invalid").forEach((node) => node.classList.remove("is-invalid"));
+    app.querySelectorAll(".has-invalid").forEach((node) => node.classList.remove("has-invalid"));
+  }
+
+  function markInvalidFields(index, fields) {
+    const card = app.querySelector(`.exercise-card[data-index="${index}"]`);
+    if (!card) return;
+    card.classList.add("has-invalid");
+    fields.forEach((field) => {
+      const input = card.querySelector(`[data-field="${field}"]`);
+      if (input) input.classList.add("is-invalid");
     });
   }
 
@@ -1959,7 +1994,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=35", { updateViaCache: "none" })
+        .register("sw.js?v=36", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
