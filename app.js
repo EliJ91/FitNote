@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.11";
+  const APP_VERSION = "1.3.12";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -571,6 +571,28 @@
     return state.routines[currentRoutine()] || [];
   }
 
+  function existingExerciseOptions() {
+    const byName = new Map();
+    (state.exercises || []).forEach((exercise) => {
+      const name = String(exercise.name || "").trim();
+      if (!name) return;
+      const key = name.toLocaleLowerCase();
+      if (!byName.has(key) || exercise.active) byName.set(key, { id: exercise.id, name });
+    });
+    return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+  }
+
+  function findExistingExerciseByName(name) {
+    const normalized = String(name || "").trim();
+    if (!normalized) return null;
+    return existingExerciseOptions().find((exercise) => exercise.name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0) || null;
+  }
+
+  function selectedExerciseId(row) {
+    if (row.exercise_id && (state.exercises || []).some((exercise) => exercise.id === row.exercise_id)) return row.exercise_id;
+    return findExistingExerciseByName(row.exercise)?.id || "";
+  }
+
   function currentWorkoutSession() {
     if (editMode) return null;
     const routine = currentRoutine();
@@ -851,10 +873,23 @@
 
   function renderExerciseCard(row, index) {
     if (!editMode) return renderWorkoutExerciseCard(row, index);
+    const exerciseOptions = existingExerciseOptions();
+    const selectedId = selectedExerciseId(row);
     return `
       <article class="exercise-card template-card" data-index="${index}">
         <div class="card-title-row">
-          <input class="text-input exercise-name-input" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}" aria-label="Exercise name">
+          <div class="exercise-name-controls">
+            <select class="text-input exercise-name-select" data-action="select-existing-exercise" data-index="${index}" aria-label="Select existing exercise">
+              <option value="">New exercise</option>
+              ${exerciseOptions
+                .map(
+                  (exercise) =>
+                    `<option value="${escapeAttr(exercise.id)}" ${exercise.id === selectedId ? "selected" : ""}>${escapeHtml(exercise.name)}</option>`
+                )
+                .join("")}
+            </select>
+            <textarea class="text-input exercise-name-input" data-field="exercise" data-index="${index}" rows="2" aria-label="Exercise name">${escapeHtml(row.exercise)}</textarea>
+          </div>
           <div class="mini-actions">
             <button class="icon-btn card-icon-btn" type="button" data-action="move-exercise" data-direction="up" data-index="${index}" aria-label="Move exercise up" title="Move up" ${index === 0 ? "disabled" : ""}>${iconSvg("up")}</button>
             <button class="icon-btn card-icon-btn" type="button" data-action="move-exercise" data-direction="down" data-index="${index}" aria-label="Move exercise down" title="Move down" ${index === currentRows().length - 1 ? "disabled" : ""}>${iconSvg("down")}</button>
@@ -964,6 +999,24 @@
       input.addEventListener("input", () => {
         const row = currentRows()[Number(input.dataset.index)];
         row[input.dataset.field] = input.value;
+        if (input.dataset.field === "exercise") {
+          const existing = findExistingExerciseByName(input.value);
+          row.exercise_id = existing ? existing.id : "";
+          const select = input.closest(".exercise-card")?.querySelector("[data-action='select-existing-exercise']");
+          if (select) select.value = row.exercise_id;
+        }
+        saveState();
+      });
+    });
+
+    app.querySelectorAll("[data-action='select-existing-exercise']").forEach((select) => {
+      select.addEventListener("change", () => {
+        const row = currentRows()[Number(select.dataset.index)];
+        const exercise = existingExerciseOptions().find((item) => item.id === select.value);
+        row.exercise_id = exercise?.id || "";
+        if (exercise) row.exercise = exercise.name;
+        const input = select.closest(".exercise-card")?.querySelector("[data-field='exercise']");
+        if (input) input.value = row.exercise;
         saveState();
       });
     });
@@ -1859,7 +1912,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=32", { updateViaCache: "none" })
+        .register("sw.js?v=33", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

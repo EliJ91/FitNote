@@ -61,6 +61,7 @@
   function normalizeExerciseRow(row = {}) {
     const weight = row.weight ?? row.target_weight ?? "";
     return {
+      exercise_id: row.exercise_id || "",
       exercise: cleanText(row.exercise, "New Exercise"),
       weight: weight === "" ? "" : formatWeight(weight),
       reps: String(row.reps ?? row.target_reps ?? "").trim(),
@@ -135,7 +136,8 @@
 
   function ensureExercise(data, row, metadata = {}) {
     const name = cleanText(row.exercise || row.name, "Exercise");
-    const id = row.exercise_id || row.id || stableId("ex", name);
+    const matchedByName = data.exercises.find((exercise) => exercise.name.localeCompare(name, undefined, { sensitivity: "accent" }) === 0);
+    const id = row.exercise_id || row.id || matchedByName?.id || stableId("ex", name);
     if (!data.exercises.some((exercise) => exercise.id === id)) {
       data.exercises.push({
         id,
@@ -145,6 +147,8 @@
         active: row.active === undefined ? true : boolFromData(row.active),
         legacy_names: [name],
       });
+    } else if (matchedByName && !matchedByName.active && row.active !== false) {
+      matchedByName.active = true;
     }
     return id;
   }
@@ -471,10 +475,11 @@
     return session;
   }
 
-  function previousSetsForExercise(data, routineName, exerciseId, excludeSessionId) {
-    const session = sessionsForRoutine(data, routineName)
+  function previousSetsForExercise(data, _routineName, exerciseId, excludeSessionId) {
+    const excludedSession = data.workout_sessions.find((session) => session.id === excludeSessionId);
+    const session = data.workout_sessions
       .filter((item) => item.status === "completed" && item.id !== excludeSessionId)
-      .filter((item) => sessionDate(item) !== sessionDate({ started_at: data.workout_sessions.find((s) => s.id === excludeSessionId)?.started_at || "" }))
+      .filter((item) => sessionDate(item) !== sessionDate(excludedSession || {}))
       .sort(sessionSortDesc)
       .find((item) => exercisesForSession(data, item.id).some((exercise) => exercise.exercise_id === exerciseId));
     if (!session) return [];

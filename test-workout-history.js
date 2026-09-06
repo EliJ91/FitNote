@@ -95,6 +95,19 @@ function rows(data, session) {
 
 {
   let data = migrated();
+  const oldPush = completedSessions(data, "Push Day").find((session) => session.started_at.startsWith("2026-08-09"));
+  const oldIncline = rows(data, oldPush).find((row) => row.exercise === "Incline Barbell Press");
+  data.routines["Chest Day"] = [
+    { exercise_id: oldIncline.exercise_id, exercise: "Incline Barbell Press", weight: "115", reps: "5x8", track_pb: false },
+  ];
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  const session = history.startWorkoutSession(data, "Chest Day", { today: TODAY, now: new Date("2026-09-02T13:15:00.000Z") });
+  const chestIncline = rows(data, session).find((row) => row.exercise === "Incline Barbell Press");
+  assert.deepStrictEqual(chestIncline.previous_sets.map((set) => `${set.weight}x${set.reps}`), ["125x8", "125x8", "125x8"]);
+}
+
+{
+  let data = migrated();
   data.routines["Chest Day"] = [{ exercise: "Incline Bench", weight: "115", reps: "5x8", track_pb: true }];
   data = history.ensureHistoricalModel(data, { today: TODAY });
   const session = history.startWorkoutSession(data, "Chest Day", { today: TODAY, now: new Date("2026-09-02T13:30:00.000Z") });
