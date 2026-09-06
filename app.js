@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.10";
+  const APP_VERSION = "1.3.11";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -1062,9 +1062,15 @@
 
     app.querySelectorAll("[data-action='delete-set']").forEach((button) => {
       button.addEventListener("click", () => {
+        const list = app.querySelector("[data-routine-list]");
+        const scrollTop = list?.scrollTop ?? 0;
+        const pageScrollTop = document.scrollingElement?.scrollTop ?? 0;
         workoutHistory.deleteWorkoutSet(state, button.dataset.setId);
         saveState();
         render();
+        const nextList = app.querySelector("[data-routine-list]");
+        if (nextList) nextList.scrollTop = scrollTop;
+        if (document.scrollingElement) document.scrollingElement.scrollTop = pageScrollTop;
       });
     });
 
@@ -1853,7 +1859,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=31", { updateViaCache: "none" })
+        .register("sw.js?v=32", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
