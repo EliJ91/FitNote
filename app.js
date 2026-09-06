@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.6";
+  const APP_VERSION = "1.3.9";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -576,9 +576,13 @@
     const routine = currentRoutine();
     const existing =
       currentSessionId && state.workout_sessions.find((session) => session.id === currentSessionId && session.routine_name === routine);
-    if (existing && String(existing.started_at || existing.completed_at || "").slice(0, 10) === TODAY) return existing;
+    if (existing && String(existing.started_at || existing.completed_at || "").slice(0, 10) === TODAY) {
+      if (workoutHistory.syncWorkoutSessionWithRoutine(state, existing.id, { includeCompleted: true })) saveState();
+      return existing;
+    }
     const session = workoutHistory.startWorkoutSession(state, routine, { today: TODAY });
     currentSessionId = session.id;
+    if (workoutHistory.syncWorkoutSessionWithRoutine(state, session.id, { includeCompleted: true })) saveState();
     saveState();
     return session;
   }
@@ -1092,9 +1096,15 @@
   async function saveRoutineButton() {
     if (editMode) {
       if (!validateRows()) return;
+      const editedRoutine = currentRoutine();
       editMode = false;
       editSnapshot = null;
       state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
+      const activeSession = workoutHistory.todaySession(state, editedRoutine, TODAY);
+      if (activeSession) {
+        workoutHistory.syncWorkoutSessionWithRoutine(state, activeSession.id, { includeCompleted: true });
+        currentSessionId = activeSession.id;
+      }
       saveState();
       render();
       if (!hasCloudIdentity()) {
@@ -1779,6 +1789,31 @@
     list.addEventListener("scroll", update, { passive: true });
   }
 
+  function bindPressFeedback() {
+    let pressedButton = null;
+    const clearPressed = () => {
+      if (!pressedButton) return;
+      pressedButton.classList.remove("is-pressing");
+      pressedButton = null;
+    };
+
+    document.addEventListener("pointerdown", (event) => {
+      const button = event.target.closest("button");
+      if (!button || button.disabled) return;
+      clearPressed();
+      pressedButton = button;
+      button.classList.add("is-pressing");
+    });
+    document.addEventListener("pointerup", clearPressed);
+    document.addEventListener("pointercancel", clearPressed);
+    document.addEventListener("click", () => window.setTimeout(clearPressed, 90));
+    document.addEventListener("keydown", (event) => {
+      if (!["Enter", " "].includes(event.key) || event.target?.tagName !== "BUTTON" || event.target.disabled) return;
+      event.target.classList.add("is-pressing");
+      window.setTimeout(() => event.target.classList.remove("is-pressing"), 120);
+    });
+  }
+
   document.addEventListener("click", (event) => {
     if (!event.target.closest("[data-menu]") && !event.target.closest("[data-action='toggle-menu']")) {
       const menu = app.querySelector("[data-menu]");
@@ -1812,12 +1847,13 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js", { updateViaCache: "none" })
+        .register("sw.js?v=30", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
   }
 
+  bindPressFeedback();
   render();
   initCloudAuth();
 })();

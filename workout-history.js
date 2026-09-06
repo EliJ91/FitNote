@@ -157,6 +157,7 @@
       order: index + 1,
       default_weight: row.weight,
       default_reps: row.reps,
+      track_pb: boolFromData(row.track_pb),
       active: row.active !== false,
     }));
     if (existing) {
@@ -355,22 +356,88 @@
         exercise_id: routineExercise.exercise_id,
         exercise_name: exercise?.name || "Exercise",
         order: index + 1,
-        track_pb: false,
+        track_pb: boolFromData(routineExercise.track_pb),
       });
-      parseSetScheme(routineExercise.default_reps).forEach((sourceSet, setIndex) => {
-        data.workout_sets.push({
-          id: randomId("set"),
-          workout_exercise_id: workoutExerciseId,
-          set_number: setIndex + 1,
-          weight: formatWeight(routineExercise.default_weight ?? ""),
-          reps: sourceSet.reps,
-          completed: false,
-          timestamp: "",
-          legacy_source: "routine_template",
-          legacy_reps: routineExercise.default_reps || "",
-        });
+      seedSetsFromRoutineExercise(data, workoutExerciseId, routineExercise);
+    });
+  }
+
+  function seedSetsFromRoutineExercise(data, workoutExerciseId, routineExercise) {
+    parseSetScheme(routineExercise.default_reps).forEach((sourceSet, setIndex) => {
+      data.workout_sets.push({
+        id: randomId("set"),
+        workout_exercise_id: workoutExerciseId,
+        set_number: setIndex + 1,
+        weight: formatWeight(routineExercise.default_weight ?? ""),
+        reps: sourceSet.reps,
+        completed: false,
+        timestamp: "",
+        legacy_source: "routine_template",
+        legacy_reps: routineExercise.default_reps || "",
       });
     });
+  }
+
+  function syncWorkoutSessionWithRoutine(data, sessionId, options = {}) {
+    const session = data.workout_sessions.find((item) => item.id === sessionId);
+    if (!session || (session.status === "completed" && !options.includeCompleted)) return false;
+    const routine = data.routine_definitions.find((item) => item.id === session.routine_id) || routineByName(data, session.routine_name);
+    if (!routine) return false;
+    const templateExercises = (routine.exercises || []).filter((item) => item.active !== false);
+    const sessionExercises = exercisesForSession(data, sessionId);
+    const matchedWorkoutIds = new Set();
+    let changed = false;
+
+    templateExercises.forEach((routineExercise, index) => {
+      let workoutExercise = sessionExercises.find(
+        (item) => item.exercise_id === routineExercise.exercise_id && !matchedWorkoutIds.has(item.id)
+      );
+      if (!workoutExercise) {
+        const workoutExerciseId = randomId("wex");
+        const exercise = data.exercises.find((item) => item.id === routineExercise.exercise_id);
+        workoutExercise = {
+          id: workoutExerciseId,
+          workout_session_id: sessionId,
+          exercise_id: routineExercise.exercise_id,
+          exercise_name: exercise?.name || "Exercise",
+          order: index + 1,
+          track_pb: boolFromData(routineExercise.track_pb),
+        };
+        data.workout_exercises.push(workoutExercise);
+        sessionExercises.push(workoutExercise);
+        seedSetsFromRoutineExercise(data, workoutExercise.id, routineExercise);
+        changed = true;
+      } else {
+        const exercise = data.exercises.find((item) => item.id === routineExercise.exercise_id);
+        const nextName = exercise?.name || workoutExercise.exercise_name || "Exercise";
+        const nextOrder = index + 1;
+        const nextTrackPb = boolFromData(routineExercise.track_pb);
+        if (
+          workoutExercise.exercise_name !== nextName ||
+          Number(workoutExercise.order || 0) !== nextOrder ||
+          boolFromData(workoutExercise.track_pb) !== nextTrackPb
+        ) {
+          changed = true;
+        }
+        workoutExercise.exercise_name = nextName;
+        workoutExercise.order = nextOrder;
+        workoutExercise.track_pb = nextTrackPb;
+        if (!setsForWorkoutExercise(data, workoutExercise.id).length) {
+          seedSetsFromRoutineExercise(data, workoutExercise.id, routineExercise);
+          changed = true;
+        }
+      }
+      matchedWorkoutIds.add(workoutExercise.id);
+    });
+
+    sessionExercises
+      .filter((item) => !matchedWorkoutIds.has(item.id))
+      .forEach((item, index) => {
+        const nextOrder = templateExercises.length + index + 1;
+        if (Number(item.order || 0) !== nextOrder) changed = true;
+        item.order = nextOrder;
+      });
+    return changed;
   }
 
   function startWorkoutSession(data, routineName, options = {}) {
@@ -395,8 +462,12 @@
     };
     data.workout_sessions.push(session);
     const previous = latestCompletedSession(data, routineName, session.id);
-    if (previous) copyExercisesFromSession(data, previous, session.id);
-    else seedExercisesFromRoutine(data, routine, session.id);
+    if (previous) {
+      copyExercisesFromSession(data, previous, session.id);
+      syncWorkoutSessionWithRoutine(data, session.id);
+    } else {
+      seedExercisesFromRoutine(data, routine, session.id);
+    }
     return session;
   }
 
@@ -584,6 +655,7 @@
     addWorkoutExercise,
     deleteWorkoutExercise,
     moveWorkoutExercise,
+    syncWorkoutSessionWithRoutine,
     completeWorkoutSession,
     syncRoutineLogFromSession,
     formatSets,

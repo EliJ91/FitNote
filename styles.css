@@ -46,6 +46,18 @@ input {
 
 button {
   -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 110ms ease,
+    filter 110ms ease,
+    box-shadow 110ms ease,
+    border-color 110ms ease,
+    background 110ms ease;
+}
+
+button:not([disabled]):active,
+button.is-pressing:not([disabled]) {
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(1.16);
 }
 
 .app-shell {

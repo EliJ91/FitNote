@@ -57,6 +57,19 @@ function rows(data, session) {
 }
 
 {
+  let data = migrated();
+  data.routines["Push Day"].push({ exercise: "Machine Press", weight: "80", reps: "2x12", track_pb: false });
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  const session = history.startWorkoutSession(data, "Push Day", { today: TODAY, now: new Date("2026-09-02T10:30:00.000Z") });
+  const machinePress = rows(data, session).find((row) => row.exercise === "Machine Press");
+  assert.ok(machinePress);
+  assert.deepStrictEqual(machinePress.sets.map((set) => `${set.weight}x${set.reps}:${set.completed}`), [
+    "80x12:false",
+    "80x12:false",
+  ]);
+}
+
+{
   const data = migrated();
   const session = history.startWorkoutSession(data, "Pull Day", { today: TODAY, now: new Date("2026-09-02T11:00:00.000Z") });
   const pulldown = rows(data, session).find((row) => row.exercise === "Lat Pulldown");
@@ -78,6 +91,42 @@ function rows(data, session) {
   const plank = rows(data, session).find((row) => row.exercise === "Plank");
   assert.strictEqual(plank.previous_sets.length, 0);
   assert.deepStrictEqual(plank.sets.map((set) => set.reps), ["45 sec", "45 sec", "45 sec"]);
+}
+
+{
+  let data = migrated();
+  data.routines["Chest Day"] = [{ exercise: "Incline Bench", weight: "115", reps: "5x8", track_pb: true }];
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  const session = history.startWorkoutSession(data, "Chest Day", { today: TODAY, now: new Date("2026-09-02T13:30:00.000Z") });
+  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Bench"]);
+  data.routines["Chest Day"].push({ exercise: "Standing Shoulder Press", weight: "95", reps: "5x8", track_pb: true });
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), true);
+  assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), false);
+  const chestRows = rows(data, session);
+  assert.deepStrictEqual(chestRows.map((row) => row.exercise), ["Incline Bench", "Standing Shoulder Press"]);
+  assert.strictEqual(chestRows[0].track_pb, true);
+  assert.strictEqual(chestRows[1].track_pb, true);
+  assert.deepStrictEqual(chestRows[1].sets.map((set) => `${set.weight}x${set.reps}:${set.completed}`), [
+    "95x8:false",
+    "95x8:false",
+    "95x8:false",
+    "95x8:false",
+    "95x8:false",
+  ]);
+}
+
+{
+  let data = migrated();
+  data.routines["Chest Day"] = [{ exercise: "Incline Bench", weight: "115", reps: "5x8", track_pb: false }];
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  const session = history.startWorkoutSession(data, "Chest Day", { today: TODAY, now: new Date("2026-09-02T14:00:00.000Z") });
+  history.completeWorkoutSession(data, session.id, { now: new Date("2026-09-02T15:00:00.000Z") });
+  data.routines["Chest Day"].push({ exercise: "Standing Shoulder Press", weight: "95", reps: "5x8", track_pb: false });
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), false);
+  assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id, { includeCompleted: true }), true);
+  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Bench", "Standing Shoulder Press"]);
 }
 
 {
