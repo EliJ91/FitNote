@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.17";
+  const APP_VERSION = "1.3.18";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -906,7 +906,6 @@
   }
 
   function renderWorkoutExerciseCard(row, index) {
-    const previous = row.previous_sets.length ? workoutHistory.formatSets(row.previous_sets) : "No previous workout";
     return `
       <article class="exercise-card workout-card" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">
         <div class="card-title-row">
@@ -921,7 +920,6 @@
             <button class="card-menu-item danger" type="button" data-action="delete-workout-exercise" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">Delete Exercise</button>
           </div>
         </div>
-        <div class="previous-line full-row">${iconSvg("trend")}<span>Previous: ${escapeHtml(previous)}</span></div>
         <div class="set-grid full-row">
           <div class="set-head">Set</div>
           <div class="set-head">Weight (lb)</div>
@@ -1994,7 +1992,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=38", { updateViaCache: "none" })
+        .register("sw.js?v=39", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

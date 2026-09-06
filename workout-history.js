@@ -475,18 +475,6 @@
     return session;
   }
 
-  function previousSetsForExercise(data, _routineName, exerciseId, excludeSessionId) {
-    const excludedSession = data.workout_sessions.find((session) => session.id === excludeSessionId);
-    const session = data.workout_sessions
-      .filter((item) => item.status === "completed" && item.id !== excludeSessionId)
-      .filter((item) => sessionDate(item) !== sessionDate(excludedSession || {}))
-      .sort(sessionSortDesc)
-      .find((item) => exercisesForSession(data, item.id).some((exercise) => exercise.exercise_id === exerciseId));
-    if (!session) return [];
-    const previousExercise = exercisesForSession(data, session.id).find((exercise) => exercise.exercise_id === exerciseId);
-    return previousExercise ? setsForWorkoutExercise(data, previousExercise.id).filter((set) => boolFromData(set.completed)) : [];
-  }
-
   function sessionRows(data, sessionId) {
     const session = data.workout_sessions.find((item) => item.id === sessionId);
     if (!session) return [];
@@ -498,7 +486,6 @@
         exercise: workoutExercise.exercise_name || exercise?.name || "Exercise",
         track_pb: boolFromData(workoutExercise.track_pb),
         sets: setsForWorkoutExercise(data, workoutExercise.id),
-        previous_sets: previousSetsForExercise(data, session.routine_name, workoutExercise.exercise_id, sessionId),
       };
     });
   }

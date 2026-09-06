@@ -351,7 +351,6 @@ button.is-pressing:not([disabled]) {
 }
 
 .select-main .icon,
-.previous-line .icon,
 .action-add .icon,
 .add-set-btn .icon {
   color: var(--blue);
@@ -602,23 +601,6 @@ button.is-pressing:not([disabled]) {
 .routine-actions-menu {
   top: calc(100% + 6px);
   right: 0;
-}
-
-.previous-line {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 0.94rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.previous-line .icon {
-  width: 19px;
-  height: 19px;
-  flex: 0 0 auto;
 }
 
 .set-grid {
