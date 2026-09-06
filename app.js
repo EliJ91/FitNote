@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.13";
+  const APP_VERSION = "1.3.14";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -1016,7 +1016,7 @@
     });
 
     app.querySelectorAll("[data-action='select-existing-exercise']").forEach((button) => {
-      button.addEventListener("click", () => {
+      const selectExercise = () => {
         const row = currentRows()[Number(button.dataset.index)];
         row.exercise_id = button.dataset.exerciseId || "";
         row.exercise = button.dataset.exerciseName || row.exercise;
@@ -1025,6 +1025,13 @@
         const menu = button.closest("[data-exercise-option-menu]");
         if (menu) menu.hidden = true;
         saveState();
+      };
+      button.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        selectExercise();
+      });
+      button.addEventListener("click", () => {
+        selectExercise();
       });
     });
 
@@ -1187,6 +1194,7 @@
 
   async function saveRoutineButton() {
     if (editMode) {
+      syncEditFieldsFromDom();
       if (!validateRows()) return;
       const editedRoutine = currentRoutine();
       editMode = false;
@@ -1229,6 +1237,18 @@
       }
     }
     return true;
+  }
+
+  function syncEditFieldsFromDom() {
+    app.querySelectorAll("[data-field]").forEach((input) => {
+      const row = currentRows()[Number(input.dataset.index)];
+      if (!row) return;
+      row[input.dataset.field] = input.value;
+      if (input.dataset.field === "exercise") {
+        const existing = findExistingExerciseByName(input.value);
+        row.exercise_id = existing ? existing.id : "";
+      }
+    });
   }
 
   function validateWorkoutRows() {
@@ -1939,7 +1959,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=34", { updateViaCache: "none" })
+        .register("sw.js?v=35", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
