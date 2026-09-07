@@ -18,19 +18,44 @@ function rows(data, session) {
   return history.sessionRows(data, session.id);
 }
 
+function assertCleanModel(data) {
+  const exerciseIds = new Set(data.exercises.map((exercise) => exercise.id));
+  const routineIds = new Set(data.routine_definitions.map((routine) => routine.id));
+  const sessionIds = new Set(data.workout_sessions.map((session) => session.id));
+  const workoutExerciseIds = new Set(data.workout_exercises.map((exercise) => exercise.id));
+  data.routine_definitions.forEach((routine) => {
+    routine.exercises.forEach((exercise, index) => {
+      assert.ok(exerciseIds.has(exercise.exercise_id));
+      assert.strictEqual(exercise.order, index + 1);
+    });
+  });
+  data.workout_sessions.forEach((session) => assert.ok(routineIds.has(session.routine_id)));
+  data.workout_exercises.forEach((exercise) => {
+    assert.ok(sessionIds.has(exercise.workout_session_id));
+    assert.ok(exerciseIds.has(exercise.exercise_id));
+  });
+  data.workout_sets.forEach((set) => assert.ok(workoutExerciseIds.has(set.workout_exercise_id)));
+}
+
 {
   const data = migrated();
   assert.strictEqual(data.history_version, history.HISTORY_SCHEMA_VERSION);
-  assert.ok(data.exercises.length >= history.presetExerciseNames().length);
+  assert.ok(data.exercises.length > 0);
+  assert.ok(data.exercises.length < history.presetExerciseNames().length);
+  assert.ok(data.exercises.every((exercise) => history.presetExerciseNames().includes(exercise.name)));
   assert.ok(data.routine_definitions.length >= 3);
   assert.ok(completedSessions(data).length >= 8);
   assert.ok(data.workout_sets.length >= 56);
   const push = completedSessions(data, "Push Day").find((session) => session.started_at.startsWith("2026-08-09"));
   const incline = rows(data, push).find((row) => row.exercise === "Incline Barbell Bench Press");
   assert.deepStrictEqual(incline.sets.map((set) => `${set.weight}x${set.reps}`), ["125x8", "125x8", "125x8"]);
-  assert.ok(incline.sets.every((set) => set.legacy_source === "legacy_summary"));
+  assert.ok(incline.sets.every((set) => !("legacy_source" in set) && !("legacy_reps" in set)));
   assert.strictEqual(incline.exercise_id, history.presetExerciseId("Incline Barbell Bench Press"));
   assert.ok(data.routines["Push Day"].some((row) => row.exercise === "Cable Triceps Pushdown"));
+  assert.ok(!("groups" in data));
+  assert.ok(!("sets" in data));
+  assert.ok(!JSON.stringify(data).includes("legacy"));
+  assertCleanModel(data);
 }
 
 {

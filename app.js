@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.20";
+  const APP_VERSION = "1.3.21";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -293,6 +293,7 @@
   }
 
   function saveState(options = {}) {
+    state = normalizeData(state);
     localStorage.setItem(currentStorageKey(), JSON.stringify(state));
     if (options.cloud !== false) queueCloudSave();
   }
@@ -1604,13 +1605,13 @@
       workoutHistory.sessionRows(state, session.id).forEach((item) => {
         item.sets.filter((set) => set.completed).forEach((set) => {
           points.push({
-          date: String(session.completed_at || session.started_at || "").slice(0, 10),
-          routine: session.routine_name,
-          exercise: item.exercise,
-          weight: set.weight,
-          reps: set.reps,
-          numericWeight: Number(set.weight) || 0,
-          tooltip: `${item.exercise}\nWeight: ${set.weight}\nReps: ${set.reps}`,
+            date: String(session.completed_at || session.started_at || "").slice(0, 10),
+            routine: session.routine_name,
+            exercise: item.exercise,
+            weight: set.weight,
+            reps: set.reps,
+            numericWeight: Number(set.weight) || 0,
+            tooltip: `${item.exercise}\nWeight: ${set.weight}\nReps: ${set.reps}`,
           });
         });
       });

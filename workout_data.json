@@ -2,466 +2,155 @@
   "settings": {
     "always_on_top": true
   },
-  "selected_group": "Pull Day",
-  "deleted_groups": [
-    "Upper Day",
-    "Lower Day"
-  ],
-  "groups": {
-    "Push Day": [
-      {
-        "exercise": "Incline Barbell Bench Press",
-        "percent": 100,
-        "target_reps": "3x8",
-        "target_weight": 125
-      },
-      {
-        "exercise": "Seated Dumbbell Shoulder Press",
-        "percent": 55,
-        "target_reps": "3x10",
-        "target_weight": 67.5
-      },
-      {
-        "exercise": "Cable Chest Fly",
-        "percent": 30,
-        "target_reps": "3x8",
-        "target_weight": 37.5
-      },
-      {
-        "exercise": "Cable Lateral Raise",
-        "percent": 10,
-        "target_reps": "3x8",
-        "target_weight": 12.5
-      },
-      {
-        "exercise": "Cable Triceps Pushdown",
-        "percent": 35,
-        "target_reps": "3x10",
-        "target_weight": 42.5
-      },
-      {
-        "exercise": "Overhead Cable Triceps Extension",
-        "percent": 20,
-        "target_reps": "2x15",
-        "target_weight": 25
-      }
-    ],
-    "Pull Day": [
-      {
-        "exercise": "Barbell Bent-Over Row",
-        "percent": 100,
-        "target_reps": "3x8",
-        "target_weight": 100
-      },
-      {
-        "exercise": "Wide-Grip Lat Pulldown",
-        "percent": 100,
-        "target_reps": "3x6",
-        "target_weight": 100
-      },
-      {
-        "exercise": "Single-Arm Cable Row",
-        "percent": 40,
-        "target_reps": "3x8",
-        "target_weight": 40
-      },
-      {
-        "exercise": "Face Pull",
-        "percent": 40,
-        "target_reps": "3x12",
-        "target_weight": 40
-      },
-      {
-        "exercise": "EZ-Bar Preacher Curl",
-        "percent": 30,
-        "target_reps": "3x10",
-        "target_weight": 30
-      },
-      {
-        "exercise": "Cable Hammer Curl",
-        "percent": 15,
-        "target_reps": "2x10",
-        "target_weight": 15
-      }
-    ],
-    "Legs Day": [
-      {
-        "exercise": "Barbell Back Squat",
-        "percent": 100,
-        "target_reps": "3x6-8"
-      },
-      {
-        "exercise": "Barbell Romanian Deadlift",
-        "percent": 70,
-        "target_reps": "3x8-10"
-      },
-      {
-        "exercise": "Dumbbell Bulgarian Split Squat",
-        "percent": 35,
-        "target_reps": "3x10 each leg"
-      },
-      {
-        "exercise": "Cable Pull-Through",
-        "percent": 40,
-        "target_reps": "3x12"
-      },
-      {
-        "exercise": "Machine Standing Calf Raise",
-        "percent": 50,
-        "target_reps": "3x15"
-      },
-      {
-        "exercise": "Back Extension",
-        "percent": 15,
-        "target_reps": "2x15"
-      }
-    ]
-  },
-  "sets": [
-    {
-      "date": "2026-07-08",
-      "exercise_group": "Imported",
-      "main_exercise": "Barbell Back Squat",
-      "main_weight": 185,
-      "exercise": "Barbell Back Squat",
-      "percent": 100,
-      "target_weight": 185,
-      "target_reps": "5"
-    },
-    {
-      "date": "2026-07-15",
-      "exercise_group": "Imported",
-      "main_exercise": "Barbell Back Squat",
-      "main_weight": 195,
-      "exercise": "Barbell Back Squat",
-      "percent": 100,
-      "target_weight": 195,
-      "target_reps": "5"
-    },
-    {
-      "date": "2026-07-22",
-      "exercise_group": "Imported",
-      "main_exercise": "Barbell Back Squat",
-      "main_weight": 200,
-      "exercise": "Barbell Back Squat",
-      "percent": 100,
-      "target_weight": 200,
-      "target_reps": "5"
-    },
-    {
-      "date": "2026-07-10",
-      "exercise_group": "Imported",
-      "main_exercise": "Barbell Bench Press",
-      "main_weight": 135,
-      "exercise": "Barbell Bench Press",
-      "percent": 100,
-      "target_weight": 135,
-      "target_reps": "6"
-    },
-    {
-      "date": "2026-07-17",
-      "exercise_group": "Imported",
-      "main_exercise": "Barbell Bench Press",
-      "main_weight": 145,
-      "exercise": "Barbell Bench Press",
-      "percent": 100,
-      "target_weight": 145,
-      "target_reps": "5"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Incline Barbell Bench Press",
-      "percent": 100,
-      "target_weight": 125,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Seated Dumbbell Shoulder Press",
-      "percent": 55,
-      "target_weight": 67.5,
-      "target_reps": "3x10"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Chest Fly",
-      "percent": 30,
-      "target_weight": 37.5,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Lateral Raise",
-      "percent": 10,
-      "target_weight": 12.5,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Triceps Pushdown",
-      "percent": 35,
-      "target_weight": 42.5,
-      "target_reps": "3x10"
-    },
-    {
-      "date": "2026-08-03",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Overhead Cable Triceps Extension",
-      "percent": 20,
-      "target_weight": 25,
-      "target_reps": "2x15"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "Barbell Bent-Over Row",
-      "percent": 100,
-      "target_weight": 100,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "Wide-Grip Lat Pulldown",
-      "percent": 100,
-      "target_weight": 100,
-      "target_reps": "3x6"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "Single-Arm Cable Row",
-      "percent": 40,
-      "target_weight": 40,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "Face Pull",
-      "percent": 40,
-      "target_weight": 40,
-      "target_reps": "3x12"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "EZ-Bar Preacher Curl",
-      "percent": 30,
-      "target_weight": 30,
-      "target_reps": "3x10"
-    },
-    {
-      "date": "2026-08-06",
-      "exercise_group": "Pull Day",
-      "main_exercise": "Barbell Bent-Over Row",
-      "main_weight": 100,
-      "exercise": "Cable Hammer Curl",
-      "percent": 15,
-      "target_weight": 15,
-      "target_reps": "2x10"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Incline Barbell Bench Press",
-      "percent": 100,
-      "target_weight": 125,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Seated Dumbbell Shoulder Press",
-      "percent": 55,
-      "target_weight": 67.5,
-      "target_reps": "3x10"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Chest Fly",
-      "percent": 30,
-      "target_weight": 37.5,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Lateral Raise",
-      "percent": 10,
-      "target_weight": 12.5,
-      "target_reps": "3x8"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Cable Triceps Pushdown",
-      "percent": 35,
-      "target_weight": 42.5,
-      "target_reps": "3x10"
-    },
-    {
-      "date": "2026-08-09",
-      "exercise_group": "Push Day",
-      "main_exercise": "Incline Barbell Bench Press",
-      "main_weight": 125,
-      "exercise": "Overhead Cable Triceps Extension",
-      "percent": 20,
-      "target_weight": 25,
-      "target_reps": "2x15"
-    }
-  ],
   "routines": {
     "Push Day": [
       {
+        "exercise_id": "ex_95mykc",
         "exercise": "Incline Barbell Bench Press",
         "weight": "125",
         "reps": "3x8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_uxyg0p",
         "exercise": "Seated Dumbbell Shoulder Press",
         "weight": "67.5",
         "reps": "3x10",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_1yq6rs6",
         "exercise": "Cable Chest Fly",
         "weight": "40",
         "reps": "3x8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_gkjeth",
         "exercise": "Cable Lateral Raise",
         "weight": "15",
         "reps": "3x8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_1qcp64m",
         "exercise": "Cable Triceps Pushdown",
         "weight": "45",
         "reps": "3x10",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_17o257t",
         "exercise": "Overhead Cable Triceps Extension",
         "weight": "40",
         "reps": "2x15",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       }
     ],
     "Pull Day": [
       {
+        "exercise_id": "ex_aolmfn",
         "exercise": "Barbell Bent-Over Row",
         "weight": "100",
         "reps": "3x8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_wf7yv",
         "exercise": "Wide-Grip Lat Pulldown",
         "weight": "100",
         "reps": "3x6",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_b6moxf",
         "exercise": "Single-Arm Cable Row",
         "weight": "40",
         "reps": "3x8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_n29u1n",
         "exercise": "Face Pull",
         "weight": "40",
         "reps": "3x12",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_10tp0cc",
         "exercise": "EZ-Bar Preacher Curl",
         "weight": "30",
         "reps": "3x10",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_11uzeb0",
         "exercise": "Dumbbell Hammer Curl",
         "weight": "15",
         "reps": "2x10",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       }
     ],
     "Legs Day": [
       {
+        "exercise_id": "ex_1jhu8",
         "exercise": "Barbell Back Squat",
         "weight": "0",
         "reps": "3x6-8",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_qhi21l",
         "exercise": "Barbell Romanian Deadlift",
         "weight": "0",
         "reps": "3x8-10",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_15iep9r",
         "exercise": "Dumbbell Bulgarian Split Squat",
         "weight": "0",
         "reps": "3x10 each leg",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_1qndg99",
         "exercise": "Cable Pull-Through",
         "weight": "0",
         "reps": "3x12",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_h7o1b8",
         "exercise": "Machine Standing Calf Raise",
         "weight": "0",
         "reps": "3x15",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       },
       {
+        "exercise_id": "ex_1kot1m7",
         "exercise": "Back Extension",
         "weight": "0",
         "reps": "2x15",
-        "track_pb": false
+        "track_pb": false,
+        "active": true
       }
     ]
   },
@@ -472,108 +161,1854 @@
       "routine": "Push Day",
       "exercises": [
         {
+          "exercise_id": "ex_95mykc",
           "exercise": "Incline Barbell Bench Press",
           "weight": "125",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_ei5mlw",
+          "sets": [
+            {
+              "id": "set_1gfvbsn",
+              "set_number": 1,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_i7beh2",
+              "set_number": 2,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            },
+            {
+              "id": "set_2ra64t",
+              "set_number": 3,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_uxyg0p",
           "exercise": "Seated Dumbbell Shoulder Press",
           "weight": "67.5",
-          "reps": "3x10"
+          "reps": "3x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_fd7lf0",
+          "sets": [
+            {
+              "id": "set_wfxhpy",
+              "set_number": 1,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_1i4u6cr",
+              "set_number": 2,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            },
+            {
+              "id": "set_1w8dpqo",
+              "set_number": 3,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_1yq6rs6",
           "exercise": "Cable Chest Fly",
           "weight": "37.5",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1m06ele",
+          "sets": [
+            {
+              "id": "set_uyjku1",
+              "set_number": 1,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_hqay2a",
+              "set_number": 2,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            },
+            {
+              "id": "set_gsrdfj",
+              "set_number": 3,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_gkjeth",
           "exercise": "Cable Lateral Raise",
           "weight": "12.5",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_nc2ikg",
+          "sets": [
+            {
+              "id": "set_1ns4wg4",
+              "set_number": 1,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_mu815z",
+              "set_number": 2,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            },
+            {
+              "id": "set_16uksg6",
+              "set_number": 3,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-03T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_1qcp64m",
           "exercise": "Cable Triceps Pushdown",
           "weight": "42.5",
-          "reps": "3x10"
+          "reps": "3x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_12uo5s6",
+          "sets": [
+            {
+              "id": "set_1f9lcc9",
+              "set_number": 1,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_19domzs",
+              "set_number": 2,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            },
+            {
+              "id": "set_1qyafbb",
+              "set_number": 3,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-03T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_17o257t",
           "exercise": "Overhead Cable Triceps Extension",
           "weight": "25",
-          "reps": "2x15"
+          "reps": "2x15",
+          "track_pb": false,
+          "workout_exercise_id": "wex_z5yf34",
+          "sets": [
+            {
+              "id": "set_1lrrlky",
+              "set_number": 1,
+              "weight": "25",
+              "reps": "15",
+              "completed": true,
+              "timestamp": "2026-08-03T12:00:00.000Z"
+            },
+            {
+              "id": "set_186ssq3",
+              "set_number": 2,
+              "weight": "25",
+              "reps": "15",
+              "completed": true,
+              "timestamp": "2026-08-03T12:01:00.000Z"
+            }
+          ]
         }
-      ]
+      ],
+      "pb_entries": [],
+      "session_id": "session_iuyoe9",
+      "completed_at": "2026-08-03T12:00:00.000Z"
     },
     {
       "date": "2026-08-06",
       "routine": "Pull Day",
       "exercises": [
         {
+          "exercise_id": "ex_aolmfn",
           "exercise": "Barbell Bent-Over Row",
           "weight": "100",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_l4mmc5",
+          "sets": [
+            {
+              "id": "set_1u5hvf1",
+              "set_number": 1,
+              "weight": "100",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_zhdmho",
+              "set_number": 2,
+              "weight": "100",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            },
+            {
+              "id": "set_1sjh7lj",
+              "set_number": 3,
+              "weight": "100",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_wf7yv",
           "exercise": "Wide-Grip Lat Pulldown",
           "weight": "100",
-          "reps": "3x6"
+          "reps": "3x6",
+          "track_pb": false,
+          "workout_exercise_id": "wex_ovk93a",
+          "sets": [
+            {
+              "id": "set_2ir88o",
+              "set_number": 1,
+              "weight": "100",
+              "reps": "6",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_1bq3n6h",
+              "set_number": 2,
+              "weight": "100",
+              "reps": "6",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            },
+            {
+              "id": "set_15jvhgu",
+              "set_number": 3,
+              "weight": "100",
+              "reps": "6",
+              "completed": true,
+              "timestamp": "2026-08-06T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_b6moxf",
           "exercise": "Single-Arm Cable Row",
           "weight": "40",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1agu88u",
+          "sets": [
+            {
+              "id": "set_ry86xl",
+              "set_number": 1,
+              "weight": "40",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_1qw2646",
+              "set_number": 2,
+              "weight": "40",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            },
+            {
+              "id": "set_rl7zu7",
+              "set_number": 3,
+              "weight": "40",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-06T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_n29u1n",
           "exercise": "Face Pull",
           "weight": "40",
-          "reps": "3x12"
+          "reps": "3x12",
+          "track_pb": false,
+          "workout_exercise_id": "wex_7e0e0m",
+          "sets": [
+            {
+              "id": "set_1vqj0ex",
+              "set_number": 1,
+              "weight": "40",
+              "reps": "12",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_1p0mhbo",
+              "set_number": 2,
+              "weight": "40",
+              "reps": "12",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            },
+            {
+              "id": "set_1amvu7f",
+              "set_number": 3,
+              "weight": "40",
+              "reps": "12",
+              "completed": true,
+              "timestamp": "2026-08-06T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_10tp0cc",
           "exercise": "EZ-Bar Preacher Curl",
           "weight": "30",
-          "reps": "3x10"
+          "reps": "3x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_s5jynx",
+          "sets": [
+            {
+              "id": "set_v12cjh",
+              "set_number": 1,
+              "weight": "30",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_n1lazc",
+              "set_number": 2,
+              "weight": "30",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            },
+            {
+              "id": "set_sr1g7z",
+              "set_number": 3,
+              "weight": "30",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-06T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_kazpfy",
           "exercise": "Cable Hammer Curl",
           "weight": "15",
-          "reps": "2x10"
+          "reps": "2x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_17hnqr2",
+          "sets": [
+            {
+              "id": "set_1hss620",
+              "set_number": 1,
+              "weight": "15",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-06T12:00:00.000Z"
+            },
+            {
+              "id": "set_pst4et",
+              "set_number": 2,
+              "weight": "15",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-06T12:01:00.000Z"
+            }
+          ]
         }
-      ]
+      ],
+      "pb_entries": [],
+      "session_id": "session_1pmnnqc",
+      "completed_at": "2026-08-06T12:00:00.000Z"
     },
     {
       "date": "2026-08-09",
       "routine": "Push Day",
       "exercises": [
         {
+          "exercise_id": "ex_95mykc",
           "exercise": "Incline Barbell Bench Press",
           "weight": "125",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_gz1qcf",
+          "sets": [
+            {
+              "id": "set_qiyci8",
+              "set_number": 1,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_1hiimpx",
+              "set_number": 2,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            },
+            {
+              "id": "set_wyxuxq",
+              "set_number": 3,
+              "weight": "125",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_uxyg0p",
           "exercise": "Seated Dumbbell Shoulder Press",
           "weight": "67.5",
-          "reps": "3x10"
+          "reps": "3x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1alrvy7",
+          "sets": [
+            {
+              "id": "set_19d96mz",
+              "set_number": 1,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_7w2nza",
+              "set_number": 2,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            },
+            {
+              "id": "set_9iruxl",
+              "set_number": 3,
+              "weight": "67.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_1yq6rs6",
           "exercise": "Cable Chest Fly",
           "weight": "37.5",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_n8hlcn",
+          "sets": [
+            {
+              "id": "set_1rlnu64",
+              "set_number": 1,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_xcgjg7",
+              "set_number": 2,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            },
+            {
+              "id": "set_4dxy5m",
+              "set_number": 3,
+              "weight": "37.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_gkjeth",
           "exercise": "Cable Lateral Raise",
           "weight": "12.5",
-          "reps": "3x8"
+          "reps": "3x8",
+          "track_pb": false,
+          "workout_exercise_id": "wex_xrcvun",
+          "sets": [
+            {
+              "id": "set_1u5u9z4",
+              "set_number": 1,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_1p4milf",
+              "set_number": 2,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            },
+            {
+              "id": "set_kamzua",
+              "set_number": 3,
+              "weight": "12.5",
+              "reps": "8",
+              "completed": true,
+              "timestamp": "2026-08-09T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_1qcp64m",
           "exercise": "Cable Triceps Pushdown",
           "weight": "42.5",
-          "reps": "3x10"
+          "reps": "3x10",
+          "track_pb": false,
+          "workout_exercise_id": "wex_q2dc6b",
+          "sets": [
+            {
+              "id": "set_um0ucg",
+              "set_number": 1,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_1oppmfl",
+              "set_number": 2,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            },
+            {
+              "id": "set_lnmfn6",
+              "set_number": 3,
+              "weight": "42.5",
+              "reps": "10",
+              "completed": true,
+              "timestamp": "2026-08-09T12:02:00.000Z"
+            }
+          ]
         },
         {
+          "exercise_id": "ex_17o257t",
           "exercise": "Overhead Cable Triceps Extension",
           "weight": "25",
-          "reps": "2x15"
+          "reps": "2x15",
+          "track_pb": false,
+          "workout_exercise_id": "wex_4ravx1",
+          "sets": [
+            {
+              "id": "set_1gb4005",
+              "set_number": 1,
+              "weight": "25",
+              "reps": "15",
+              "completed": true,
+              "timestamp": "2026-08-09T12:00:00.000Z"
+            },
+            {
+              "id": "set_1dwhdv4",
+              "set_number": 2,
+              "weight": "25",
+              "reps": "15",
+              "completed": true,
+              "timestamp": "2026-08-09T12:01:00.000Z"
+            }
+          ]
         }
-      ]
+      ],
+      "pb_entries": [],
+      "session_id": "session_rezjnp",
+      "completed_at": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "date": "2026-07-08",
+      "routine": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_1jhu8",
+          "exercise": "Barbell Back Squat",
+          "weight": "185",
+          "reps": "5",
+          "track_pb": false,
+          "workout_exercise_id": "wex_16o6why",
+          "sets": [
+            {
+              "id": "set_1haazmf",
+              "set_number": 1,
+              "weight": "185",
+              "reps": "5",
+              "completed": true,
+              "timestamp": "2026-07-08T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "pb_entries": [],
+      "session_id": "session_1ex65xg",
+      "completed_at": "2026-07-08T12:00:00.000Z"
+    },
+    {
+      "date": "2026-07-15",
+      "routine": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_1jhu8",
+          "exercise": "Barbell Back Squat",
+          "weight": "195",
+          "reps": "5",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1yii89s",
+          "sets": [
+            {
+              "id": "set_1t890w6",
+              "set_number": 1,
+              "weight": "195",
+              "reps": "5",
+              "completed": true,
+              "timestamp": "2026-07-15T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "pb_entries": [],
+      "session_id": "session_1lt5j17",
+      "completed_at": "2026-07-15T12:00:00.000Z"
+    },
+    {
+      "date": "2026-07-22",
+      "routine": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_1jhu8",
+          "exercise": "Barbell Back Squat",
+          "weight": "200",
+          "reps": "5",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1avup3a",
+          "sets": [
+            {
+              "id": "set_13p47cs",
+              "set_number": 1,
+              "weight": "200",
+              "reps": "5",
+              "completed": true,
+              "timestamp": "2026-07-22T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "pb_entries": [],
+      "session_id": "session_184x77i",
+      "completed_at": "2026-07-22T12:00:00.000Z"
+    },
+    {
+      "date": "2026-07-10",
+      "routine": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_aomnsi",
+          "exercise": "Barbell Bench Press",
+          "weight": "135",
+          "reps": "6",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1kk58gw",
+          "sets": [
+            {
+              "id": "set_13j309j",
+              "set_number": 1,
+              "weight": "135",
+              "reps": "6",
+              "completed": true,
+              "timestamp": "2026-07-10T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "pb_entries": [],
+      "session_id": "session_7wrw44",
+      "completed_at": "2026-07-10T12:00:00.000Z"
+    },
+    {
+      "date": "2026-07-17",
+      "routine": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_aomnsi",
+          "exercise": "Barbell Bench Press",
+          "weight": "145",
+          "reps": "5",
+          "track_pb": false,
+          "workout_exercise_id": "wex_1nz85x1",
+          "sets": [
+            {
+              "id": "set_z3um0k",
+              "set_number": 1,
+              "weight": "145",
+              "reps": "5",
+              "completed": true,
+              "timestamp": "2026-07-17T12:00:00.000Z"
+            }
+          ]
+        }
+      ],
+      "pb_entries": [],
+      "session_id": "session_cnqo8s",
+      "completed_at": "2026-07-17T12:00:00.000Z"
     }
-  ]
+  ],
+  "exercises": [
+    {
+      "id": "ex_1kot1m7",
+      "name": "Back Extension",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_1jhu8",
+      "name": "Barbell Back Squat",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_aomnsi",
+      "name": "Barbell Bench Press",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_aolmfn",
+      "name": "Barbell Bent-Over Row",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_qhi21l",
+      "name": "Barbell Romanian Deadlift",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_1yq6rs6",
+      "name": "Cable Chest Fly",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_kazpfy",
+      "name": "Cable Hammer Curl",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_gkjeth",
+      "name": "Cable Lateral Raise",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_1qndg99",
+      "name": "Cable Pull-Through",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_1qcp64m",
+      "name": "Cable Triceps Pushdown",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_15iep9r",
+      "name": "Dumbbell Bulgarian Split Squat",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_11uzeb0",
+      "name": "Dumbbell Hammer Curl",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_10tp0cc",
+      "name": "EZ-Bar Preacher Curl",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_n29u1n",
+      "name": "Face Pull",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_95mykc",
+      "name": "Incline Barbell Bench Press",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_h7o1b8",
+      "name": "Machine Standing Calf Raise",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_17o257t",
+      "name": "Overhead Cable Triceps Extension",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_uxyg0p",
+      "name": "Seated Dumbbell Shoulder Press",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_b6moxf",
+      "name": "Single-Arm Cable Row",
+      "category": "",
+      "equipment": "",
+      "active": true
+    },
+    {
+      "id": "ex_wf7yv",
+      "name": "Wide-Grip Lat Pulldown",
+      "category": "",
+      "equipment": "",
+      "active": true
+    }
+  ],
+  "routine_definitions": [
+    {
+      "id": "routine_1klq2mb",
+      "name": "Push Day",
+      "category": "Push Day",
+      "exercises": [
+        {
+          "exercise_id": "ex_95mykc",
+          "order": 1,
+          "default_weight": "125",
+          "default_reps": "3x8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_uxyg0p",
+          "order": 2,
+          "default_weight": "67.5",
+          "default_reps": "3x10",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_1yq6rs6",
+          "order": 3,
+          "default_weight": "40",
+          "default_reps": "3x8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_gkjeth",
+          "order": 4,
+          "default_weight": "15",
+          "default_reps": "3x8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_1qcp64m",
+          "order": 5,
+          "default_weight": "45",
+          "default_reps": "3x10",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_17o257t",
+          "order": 6,
+          "default_weight": "40",
+          "default_reps": "2x15",
+          "track_pb": false,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "routine_9gp8tk",
+      "name": "Pull Day",
+      "category": "Pull Day",
+      "exercises": [
+        {
+          "exercise_id": "ex_aolmfn",
+          "order": 1,
+          "default_weight": "100",
+          "default_reps": "3x8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_wf7yv",
+          "order": 2,
+          "default_weight": "100",
+          "default_reps": "3x6",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_b6moxf",
+          "order": 3,
+          "default_weight": "40",
+          "default_reps": "3x8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_n29u1n",
+          "order": 4,
+          "default_weight": "40",
+          "default_reps": "3x12",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_10tp0cc",
+          "order": 5,
+          "default_weight": "30",
+          "default_reps": "3x10",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_11uzeb0",
+          "order": 6,
+          "default_weight": "15",
+          "default_reps": "2x10",
+          "track_pb": false,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "routine_1fbaify",
+      "name": "Legs Day",
+      "category": "Legs Day",
+      "exercises": [
+        {
+          "exercise_id": "ex_1jhu8",
+          "order": 1,
+          "default_weight": "0",
+          "default_reps": "3x6-8",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_qhi21l",
+          "order": 2,
+          "default_weight": "0",
+          "default_reps": "3x8-10",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_15iep9r",
+          "order": 3,
+          "default_weight": "0",
+          "default_reps": "3x10 each leg",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_1qndg99",
+          "order": 4,
+          "default_weight": "0",
+          "default_reps": "3x12",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_h7o1b8",
+          "order": 5,
+          "default_weight": "0",
+          "default_reps": "3x15",
+          "track_pb": false,
+          "active": true
+        },
+        {
+          "exercise_id": "ex_1kot1m7",
+          "order": 6,
+          "default_weight": "0",
+          "default_reps": "2x15",
+          "track_pb": false,
+          "active": true
+        }
+      ],
+      "active": true
+    },
+    {
+      "id": "routine_1o3p751",
+      "name": "Imported",
+      "category": "Imported",
+      "exercises": [
+        {
+          "exercise_id": "ex_aomnsi",
+          "order": 1,
+          "default_weight": "145",
+          "default_reps": "5",
+          "track_pb": false,
+          "active": true
+        }
+      ],
+      "active": true
+    }
+  ],
+  "workout_sessions": [
+    {
+      "id": "session_iuyoe9",
+      "routine_id": "routine_1klq2mb",
+      "routine_name": "Push Day",
+      "started_at": "2026-08-03T12:00:00.000Z",
+      "completed_at": "2026-08-03T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_1pmnnqc",
+      "routine_id": "routine_9gp8tk",
+      "routine_name": "Pull Day",
+      "started_at": "2026-08-06T12:00:00.000Z",
+      "completed_at": "2026-08-06T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_rezjnp",
+      "routine_id": "routine_1klq2mb",
+      "routine_name": "Push Day",
+      "started_at": "2026-08-09T12:00:00.000Z",
+      "completed_at": "2026-08-09T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_1ex65xg",
+      "routine_id": "routine_1o3p751",
+      "routine_name": "Imported",
+      "started_at": "2026-07-08T12:00:00.000Z",
+      "completed_at": "2026-07-08T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_1lt5j17",
+      "routine_id": "routine_1o3p751",
+      "routine_name": "Imported",
+      "started_at": "2026-07-15T12:00:00.000Z",
+      "completed_at": "2026-07-15T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_184x77i",
+      "routine_id": "routine_1o3p751",
+      "routine_name": "Imported",
+      "started_at": "2026-07-22T12:00:00.000Z",
+      "completed_at": "2026-07-22T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_7wrw44",
+      "routine_id": "routine_1o3p751",
+      "routine_name": "Imported",
+      "started_at": "2026-07-10T12:00:00.000Z",
+      "completed_at": "2026-07-10T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    },
+    {
+      "id": "session_cnqo8s",
+      "routine_id": "routine_1o3p751",
+      "routine_name": "Imported",
+      "started_at": "2026-07-17T12:00:00.000Z",
+      "completed_at": "2026-07-17T12:00:00.000Z",
+      "status": "completed",
+      "notes": ""
+    }
+  ],
+  "workout_exercises": [
+    {
+      "id": "wex_ei5mlw",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_95mykc",
+      "exercise_name": "Incline Barbell Bench Press",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_fd7lf0",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_uxyg0p",
+      "exercise_name": "Seated Dumbbell Shoulder Press",
+      "order": 2,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1m06ele",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_1yq6rs6",
+      "exercise_name": "Cable Chest Fly",
+      "order": 3,
+      "track_pb": false
+    },
+    {
+      "id": "wex_nc2ikg",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_gkjeth",
+      "exercise_name": "Cable Lateral Raise",
+      "order": 4,
+      "track_pb": false
+    },
+    {
+      "id": "wex_12uo5s6",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_1qcp64m",
+      "exercise_name": "Cable Triceps Pushdown",
+      "order": 5,
+      "track_pb": false
+    },
+    {
+      "id": "wex_z5yf34",
+      "workout_session_id": "session_iuyoe9",
+      "exercise_id": "ex_17o257t",
+      "exercise_name": "Overhead Cable Triceps Extension",
+      "order": 6,
+      "track_pb": false
+    },
+    {
+      "id": "wex_l4mmc5",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_aolmfn",
+      "exercise_name": "Barbell Bent-Over Row",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_ovk93a",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_wf7yv",
+      "exercise_name": "Wide-Grip Lat Pulldown",
+      "order": 2,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1agu88u",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_b6moxf",
+      "exercise_name": "Single-Arm Cable Row",
+      "order": 3,
+      "track_pb": false
+    },
+    {
+      "id": "wex_7e0e0m",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_n29u1n",
+      "exercise_name": "Face Pull",
+      "order": 4,
+      "track_pb": false
+    },
+    {
+      "id": "wex_s5jynx",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_10tp0cc",
+      "exercise_name": "EZ-Bar Preacher Curl",
+      "order": 5,
+      "track_pb": false
+    },
+    {
+      "id": "wex_17hnqr2",
+      "workout_session_id": "session_1pmnnqc",
+      "exercise_id": "ex_kazpfy",
+      "exercise_name": "Cable Hammer Curl",
+      "order": 6,
+      "track_pb": false
+    },
+    {
+      "id": "wex_gz1qcf",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_95mykc",
+      "exercise_name": "Incline Barbell Bench Press",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1alrvy7",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_uxyg0p",
+      "exercise_name": "Seated Dumbbell Shoulder Press",
+      "order": 2,
+      "track_pb": false
+    },
+    {
+      "id": "wex_n8hlcn",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_1yq6rs6",
+      "exercise_name": "Cable Chest Fly",
+      "order": 3,
+      "track_pb": false
+    },
+    {
+      "id": "wex_xrcvun",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_gkjeth",
+      "exercise_name": "Cable Lateral Raise",
+      "order": 4,
+      "track_pb": false
+    },
+    {
+      "id": "wex_q2dc6b",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_1qcp64m",
+      "exercise_name": "Cable Triceps Pushdown",
+      "order": 5,
+      "track_pb": false
+    },
+    {
+      "id": "wex_4ravx1",
+      "workout_session_id": "session_rezjnp",
+      "exercise_id": "ex_17o257t",
+      "exercise_name": "Overhead Cable Triceps Extension",
+      "order": 6,
+      "track_pb": false
+    },
+    {
+      "id": "wex_16o6why",
+      "workout_session_id": "session_1ex65xg",
+      "exercise_id": "ex_1jhu8",
+      "exercise_name": "Barbell Back Squat",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1yii89s",
+      "workout_session_id": "session_1lt5j17",
+      "exercise_id": "ex_1jhu8",
+      "exercise_name": "Barbell Back Squat",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1avup3a",
+      "workout_session_id": "session_184x77i",
+      "exercise_id": "ex_1jhu8",
+      "exercise_name": "Barbell Back Squat",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1kk58gw",
+      "workout_session_id": "session_7wrw44",
+      "exercise_id": "ex_aomnsi",
+      "exercise_name": "Barbell Bench Press",
+      "order": 1,
+      "track_pb": false
+    },
+    {
+      "id": "wex_1nz85x1",
+      "workout_session_id": "session_cnqo8s",
+      "exercise_id": "ex_aomnsi",
+      "exercise_name": "Barbell Bench Press",
+      "order": 1,
+      "track_pb": false
+    }
+  ],
+  "workout_sets": [
+    {
+      "id": "set_1gfvbsn",
+      "workout_exercise_id": "wex_ei5mlw",
+      "set_number": 1,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_i7beh2",
+      "workout_exercise_id": "wex_ei5mlw",
+      "set_number": 2,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_2ra64t",
+      "workout_exercise_id": "wex_ei5mlw",
+      "set_number": 3,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:02:00.000Z"
+    },
+    {
+      "id": "set_wfxhpy",
+      "workout_exercise_id": "wex_fd7lf0",
+      "set_number": 1,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_1i4u6cr",
+      "workout_exercise_id": "wex_fd7lf0",
+      "set_number": 2,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_1w8dpqo",
+      "workout_exercise_id": "wex_fd7lf0",
+      "set_number": 3,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:02:00.000Z"
+    },
+    {
+      "id": "set_uyjku1",
+      "workout_exercise_id": "wex_1m06ele",
+      "set_number": 1,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_hqay2a",
+      "workout_exercise_id": "wex_1m06ele",
+      "set_number": 2,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_gsrdfj",
+      "workout_exercise_id": "wex_1m06ele",
+      "set_number": 3,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:02:00.000Z"
+    },
+    {
+      "id": "set_1ns4wg4",
+      "workout_exercise_id": "wex_nc2ikg",
+      "set_number": 1,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_mu815z",
+      "workout_exercise_id": "wex_nc2ikg",
+      "set_number": 2,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_16uksg6",
+      "workout_exercise_id": "wex_nc2ikg",
+      "set_number": 3,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-03T12:02:00.000Z"
+    },
+    {
+      "id": "set_1f9lcc9",
+      "workout_exercise_id": "wex_12uo5s6",
+      "set_number": 1,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_19domzs",
+      "workout_exercise_id": "wex_12uo5s6",
+      "set_number": 2,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_1qyafbb",
+      "workout_exercise_id": "wex_12uo5s6",
+      "set_number": 3,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-03T12:02:00.000Z"
+    },
+    {
+      "id": "set_1lrrlky",
+      "workout_exercise_id": "wex_z5yf34",
+      "set_number": 1,
+      "weight": "25",
+      "reps": "15",
+      "completed": true,
+      "timestamp": "2026-08-03T12:00:00.000Z"
+    },
+    {
+      "id": "set_186ssq3",
+      "workout_exercise_id": "wex_z5yf34",
+      "set_number": 2,
+      "weight": "25",
+      "reps": "15",
+      "completed": true,
+      "timestamp": "2026-08-03T12:01:00.000Z"
+    },
+    {
+      "id": "set_1u5hvf1",
+      "workout_exercise_id": "wex_l4mmc5",
+      "set_number": 1,
+      "weight": "100",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_zhdmho",
+      "workout_exercise_id": "wex_l4mmc5",
+      "set_number": 2,
+      "weight": "100",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_1sjh7lj",
+      "workout_exercise_id": "wex_l4mmc5",
+      "set_number": 3,
+      "weight": "100",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:02:00.000Z"
+    },
+    {
+      "id": "set_2ir88o",
+      "workout_exercise_id": "wex_ovk93a",
+      "set_number": 1,
+      "weight": "100",
+      "reps": "6",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_1bq3n6h",
+      "workout_exercise_id": "wex_ovk93a",
+      "set_number": 2,
+      "weight": "100",
+      "reps": "6",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_15jvhgu",
+      "workout_exercise_id": "wex_ovk93a",
+      "set_number": 3,
+      "weight": "100",
+      "reps": "6",
+      "completed": true,
+      "timestamp": "2026-08-06T12:02:00.000Z"
+    },
+    {
+      "id": "set_ry86xl",
+      "workout_exercise_id": "wex_1agu88u",
+      "set_number": 1,
+      "weight": "40",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_1qw2646",
+      "workout_exercise_id": "wex_1agu88u",
+      "set_number": 2,
+      "weight": "40",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_rl7zu7",
+      "workout_exercise_id": "wex_1agu88u",
+      "set_number": 3,
+      "weight": "40",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-06T12:02:00.000Z"
+    },
+    {
+      "id": "set_1vqj0ex",
+      "workout_exercise_id": "wex_7e0e0m",
+      "set_number": 1,
+      "weight": "40",
+      "reps": "12",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_1p0mhbo",
+      "workout_exercise_id": "wex_7e0e0m",
+      "set_number": 2,
+      "weight": "40",
+      "reps": "12",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_1amvu7f",
+      "workout_exercise_id": "wex_7e0e0m",
+      "set_number": 3,
+      "weight": "40",
+      "reps": "12",
+      "completed": true,
+      "timestamp": "2026-08-06T12:02:00.000Z"
+    },
+    {
+      "id": "set_v12cjh",
+      "workout_exercise_id": "wex_s5jynx",
+      "set_number": 1,
+      "weight": "30",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_n1lazc",
+      "workout_exercise_id": "wex_s5jynx",
+      "set_number": 2,
+      "weight": "30",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_sr1g7z",
+      "workout_exercise_id": "wex_s5jynx",
+      "set_number": 3,
+      "weight": "30",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-06T12:02:00.000Z"
+    },
+    {
+      "id": "set_1hss620",
+      "workout_exercise_id": "wex_17hnqr2",
+      "set_number": 1,
+      "weight": "15",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-06T12:00:00.000Z"
+    },
+    {
+      "id": "set_pst4et",
+      "workout_exercise_id": "wex_17hnqr2",
+      "set_number": 2,
+      "weight": "15",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-06T12:01:00.000Z"
+    },
+    {
+      "id": "set_qiyci8",
+      "workout_exercise_id": "wex_gz1qcf",
+      "set_number": 1,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_1hiimpx",
+      "workout_exercise_id": "wex_gz1qcf",
+      "set_number": 2,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_wyxuxq",
+      "workout_exercise_id": "wex_gz1qcf",
+      "set_number": 3,
+      "weight": "125",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:02:00.000Z"
+    },
+    {
+      "id": "set_19d96mz",
+      "workout_exercise_id": "wex_1alrvy7",
+      "set_number": 1,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_7w2nza",
+      "workout_exercise_id": "wex_1alrvy7",
+      "set_number": 2,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_9iruxl",
+      "workout_exercise_id": "wex_1alrvy7",
+      "set_number": 3,
+      "weight": "67.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:02:00.000Z"
+    },
+    {
+      "id": "set_1rlnu64",
+      "workout_exercise_id": "wex_n8hlcn",
+      "set_number": 1,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_xcgjg7",
+      "workout_exercise_id": "wex_n8hlcn",
+      "set_number": 2,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_4dxy5m",
+      "workout_exercise_id": "wex_n8hlcn",
+      "set_number": 3,
+      "weight": "37.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:02:00.000Z"
+    },
+    {
+      "id": "set_1u5u9z4",
+      "workout_exercise_id": "wex_xrcvun",
+      "set_number": 1,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_1p4milf",
+      "workout_exercise_id": "wex_xrcvun",
+      "set_number": 2,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_kamzua",
+      "workout_exercise_id": "wex_xrcvun",
+      "set_number": 3,
+      "weight": "12.5",
+      "reps": "8",
+      "completed": true,
+      "timestamp": "2026-08-09T12:02:00.000Z"
+    },
+    {
+      "id": "set_um0ucg",
+      "workout_exercise_id": "wex_q2dc6b",
+      "set_number": 1,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_1oppmfl",
+      "workout_exercise_id": "wex_q2dc6b",
+      "set_number": 2,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_lnmfn6",
+      "workout_exercise_id": "wex_q2dc6b",
+      "set_number": 3,
+      "weight": "42.5",
+      "reps": "10",
+      "completed": true,
+      "timestamp": "2026-08-09T12:02:00.000Z"
+    },
+    {
+      "id": "set_1gb4005",
+      "workout_exercise_id": "wex_4ravx1",
+      "set_number": 1,
+      "weight": "25",
+      "reps": "15",
+      "completed": true,
+      "timestamp": "2026-08-09T12:00:00.000Z"
+    },
+    {
+      "id": "set_1dwhdv4",
+      "workout_exercise_id": "wex_4ravx1",
+      "set_number": 2,
+      "weight": "25",
+      "reps": "15",
+      "completed": true,
+      "timestamp": "2026-08-09T12:01:00.000Z"
+    },
+    {
+      "id": "set_1haazmf",
+      "workout_exercise_id": "wex_16o6why",
+      "set_number": 1,
+      "weight": "185",
+      "reps": "5",
+      "completed": true,
+      "timestamp": "2026-07-08T12:00:00.000Z"
+    },
+    {
+      "id": "set_1t890w6",
+      "workout_exercise_id": "wex_1yii89s",
+      "set_number": 1,
+      "weight": "195",
+      "reps": "5",
+      "completed": true,
+      "timestamp": "2026-07-15T12:00:00.000Z"
+    },
+    {
+      "id": "set_13p47cs",
+      "workout_exercise_id": "wex_1avup3a",
+      "set_number": 1,
+      "weight": "200",
+      "reps": "5",
+      "completed": true,
+      "timestamp": "2026-07-22T12:00:00.000Z"
+    },
+    {
+      "id": "set_13j309j",
+      "workout_exercise_id": "wex_1kk58gw",
+      "set_number": 1,
+      "weight": "135",
+      "reps": "6",
+      "completed": true,
+      "timestamp": "2026-07-10T12:00:00.000Z"
+    },
+    {
+      "id": "set_z3um0k",
+      "workout_exercise_id": "wex_1nz85x1",
+      "set_number": 1,
+      "weight": "145",
+      "reps": "5",
+      "completed": true,
+      "timestamp": "2026-07-17T12:00:00.000Z"
+    }
+  ],
+  "migration_metadata": {
+    "version": 2,
+    "migrated_at": "2026-09-02T09:00:00.000Z",
+    "source_counts": {
+      "routines": 3,
+      "routine_logs": 8,
+      "sets": 23
+    }
+  },
+  "history_version": 2
 }

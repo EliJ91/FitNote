@@ -30,7 +30,7 @@ Then open `http://localhost:8080`.
 
 ## Workout History
 
-Browser storage now keeps a versioned historical model alongside legacy fields: exercises, routine definitions, workout sessions, workout exercises, and individual workout sets. Legacy summaries such as `3x8` are migrated into individual set records and tagged as summarized legacy data. The migration is idempotent and creates a localStorage backup before upgrading older browser data.
+Browser storage keeps one versioned historical model: canonical exercise names, routine definitions, workout sessions, workout exercises, and individual workout sets. Older imported summaries such as `3x8` are converted into the same set records used by new workouts, so saved data stays standardized after migration.
 
 ## Supabase
 
