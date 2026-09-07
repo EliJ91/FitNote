@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.25";
+  const APP_VERSION = "1.3.26";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
@@ -218,6 +218,10 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect><path d="m8 12 3 3 5-6"></path></svg>',
       square:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"></rect></svg>',
+      chevronRight:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>',
+      user:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"></circle><path d="M5 21v-2a7 7 0 0 1 14 0v2"></path></svg>',
     };
     return icons[name] || "";
   }
@@ -763,17 +767,17 @@
     if (!authReady) {
       return authShell(`
         <section class="auth-panel">
-          <img class="auth-logo" src="icons/fitnote-full-logo.png" alt="FitNote">
+          <img class="auth-logo" src="icons/fitnote-landing-logo.png" alt="FitNote">
           <p class="auth-copy">Checking sign in...</p>
         </section>
       `);
     }
     return authShell(`
         <section class="auth-panel">
-          <img class="auth-logo" src="icons/fitnote-full-logo.png" alt="FitNote">
+          <img class="auth-logo" src="icons/fitnote-landing-logo.png" alt="FitNote">
         <div class="auth-actions">
-          <button class="btn btn-primary" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}>Sign in with Google</button>
-          <button class="btn btn-secondary" type="button" data-action="guest-sign-in">Continue as Guest</button>
+          <button class="btn btn-primary auth-btn" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}><span class="auth-btn-icon auth-google-mark">G</span><span>Sign in with Google</span>${iconSvg("chevronRight")}</button>
+          <button class="btn btn-secondary auth-btn" type="button" data-action="guest-sign-in"><span class="auth-btn-icon">${iconSvg("user")}</span><span>Continue as Guest</span>${iconSvg("chevronRight")}</button>
         </div>
         <p class="auth-copy">${cloudUnavailable ? "Cloud sign in is unavailable. Guest mode still works." : "Cloud storage requires Google sign in."}</p>
         <p class="auth-version">Version ${escapeHtml(APP_VERSION)}</p>
@@ -2029,7 +2033,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=46", { updateViaCache: "none" })
+        .register("sw.js?v=47", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
