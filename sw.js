@@ -1,13 +1,14 @@
-const CACHE_NAME = "fitnote-v44";
+const CACHE_NAME = "fitnote-v45";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=44",
-  "./fitnote-config.js?v=44",
-  "./fitnote-history.js?v=44",
-  "./app.js?v=44",
+  "./styles.css?v=45",
+  "./fitnote-config.js?v=45",
+  "./fitnote-history.js?v=45",
+  "./app.js?v=45",
   "./manifest.webmanifest",
   "./icons/icon.svg",
+  "./icons/fitnote-logo.png",
 ];
 
 self.addEventListener("install", (event) => {

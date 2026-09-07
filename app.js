@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.23";
+  const APP_VERSION = "1.3.24";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
@@ -728,7 +728,10 @@
     return `
       <section class="screen">
         <header class="topbar">
-          <h1>${escapeHtml(title)}</h1>
+          <div class="brand-lockup">
+            <img class="brand-mark" src="icons/fitnote-logo.png" alt="">
+            <h1>${escapeHtml(title)}</h1>
+          </div>
           <button class="hamburger" type="button" data-action="toggle-menu" aria-label="Menu"><span></span></button>
         </header>
         <nav class="app-menu" data-menu hidden>
@@ -760,7 +763,7 @@
     if (!authReady) {
       return authShell(`
         <section class="auth-panel">
-          <img class="auth-logo" src="icons/icon.svg" alt="">
+          <img class="auth-logo" src="icons/fitnote-logo.png" alt="">
           <h1>FitNote</h1>
           <p class="auth-copy">Checking sign in...</p>
         </section>
@@ -768,7 +771,7 @@
     }
     return authShell(`
         <section class="auth-panel">
-          <img class="auth-logo" src="icons/icon.svg" alt="">
+          <img class="auth-logo" src="icons/fitnote-logo.png" alt="">
         <h1>FitNote</h1>
         <div class="auth-actions">
           <button class="btn btn-primary" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}>Sign in with Google</button>
@@ -1884,23 +1887,23 @@
     const grid = [0, 1, 2, 3]
       .map((index) => {
         const y = padY + (plotH * index) / 3;
-        return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" stroke="#202a3a" stroke-width="1"></line>`;
+        return `<line x1="${padX}" y1="${y}" x2="${width - padX}" y2="${y}" stroke="#1d2a25" stroke-width="1"></line>`;
       })
       .join("");
     const circles = coords
       .map(
         ({ x, y, point }) =>
-          `<circle class="chart-point" cx="${x}" cy="${y}" r="4" fill="#38bdf8" data-tip="${escapeAttr(point.tooltip)}"></circle>`
+          `<circle class="chart-point" cx="${x}" cy="${y}" r="4" fill="#22c76d" data-tip="${escapeAttr(point.tooltip)}"></circle>`
       )
       .join("");
     return `
       <div class="chart-panel" data-chart-panel>
         <svg class="trend-svg" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
           ${grid}
-          <path d="${path}" fill="none" stroke="#38bdf8" stroke-width="3"></path>
+          <path d="${path}" fill="none" stroke="#22c76d" stroke-width="3"></path>
           ${circles}
           <text x="${padX}" y="18" fill="#8ea0b8" font-size="10">${escapeHtml(formatWeight(values[0]))} lb</text>
-          <text x="${width - padX}" y="18" fill="#eef5ff" font-size="10" text-anchor="end">${escapeHtml(formatWeight(values[values.length - 1]))} lb</text>
+          <text x="${width - padX}" y="18" fill="#f4faf6" font-size="10" text-anchor="end">${escapeHtml(formatWeight(values[values.length - 1]))} lb</text>
         </svg>
         <div class="chart-tooltip" data-chart-tooltip hidden></div>
       </div>
@@ -2028,7 +2031,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=44", { updateViaCache: "none" })
+        .register("sw.js?v=45", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
