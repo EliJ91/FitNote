@@ -216,37 +216,65 @@
     "barbell row": "Barbell Bent-Over Row",
     "bench press": "Barbell Bench Press",
     "bulgarian split squat": "Dumbbell Bulgarian Split Squat",
-    "cable row 1 arm": "Single-Arm Cable Row",
+    "cable row single arm": "Single-Arm Cable Row",
     "cable pull through": "Cable Pull-Through",
-    "cable tricep pushdown": "Cable Triceps Pushdown",
+    "cable lateral raise": "Cable Lateral Raise",
+    "cable triceps pushdown": "Cable Triceps Pushdown",
     "calf raises": "Machine Standing Calf Raise",
     "face pulls": "Face Pull",
-    "hammer curl 1 arm": "Dumbbell Hammer Curl",
-    "hammer curl (cable) 1 arm": "Cable Hammer Curl",
+    "hammer curl single arm": "Dumbbell Hammer Curl",
+    "hammer curl cable single arm": "Cable Hammer Curl",
     "incline barbell press": "Incline Barbell Bench Press",
     "incline bench": "Incline Barbell Bench Press",
     "lat pulldown": "Wide-Grip Lat Pulldown",
     "machine press": "Machine Chest Press",
-    "overhead cable tricep extension": "Overhead Cable Triceps Extension",
+    "overhead cable triceps extension": "Overhead Cable Triceps Extension",
     "preacher curl": "EZ-Bar Preacher Curl",
     "romanian deadlift": "Barbell Romanian Deadlift",
     "seated shoulder press": "Seated Dumbbell Shoulder Press",
     "squat": "Barbell Back Squat",
+    "standing shoulder": "Standing Barbell Overhead Press",
     "standing shoulder press": "Standing Barbell Overhead Press",
   };
 
   function exerciseKey(name) {
-    return String(name || "").trim().toLocaleLowerCase();
+    return String(name || "")
+      .trim()
+      .toLocaleLowerCase()
+      .replace(/[\u2010-\u2015]/g, "-")
+      .replace(/\b1\s*arm\b/g, "single-arm")
+      .replace(/\bone\s*arm\b/g, "single-arm")
+      .replace(/\btricep\b/g, "triceps")
+      .replace(/\bshoulde\b/g, "shoulder")
+      .replace(/\brais\b/g, "raise")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
   }
 
   function presetExerciseNames() {
     return PRESET_EXERCISE_NAMES.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
   }
 
+  function isPlaceholderExerciseName(name) {
+    return ["exercise", "new exercise"].includes(exerciseKey(name));
+  }
+
+  function matchingPresetExerciseName(name) {
+    const key = exerciseKey(name);
+    if (!key) return "";
+    const direct = PRESET_EXERCISE_NAMES.find((item) => exerciseKey(item) === key);
+    if (direct) return direct;
+    const alias = EXERCISE_ALIASES[key];
+    if (alias) return alias;
+    const startsWithMatches = PRESET_EXERCISE_NAMES.filter((item) => exerciseKey(item).startsWith(key));
+    if (startsWithMatches.length === 1) return startsWithMatches[0];
+    return "";
+  }
+
   function canonicalExerciseName(name) {
-    const text = cleanText(name, "Exercise");
-    const direct = PRESET_EXERCISE_NAMES.find((item) => exerciseKey(item) === exerciseKey(text));
-    return direct || EXERCISE_ALIASES[exerciseKey(text)] || text;
+    const text = String(name ?? "").trim();
+    if (!text) return "";
+    return matchingPresetExerciseName(text) || text;
   }
 
   function presetExerciseId(name) {
@@ -305,7 +333,7 @@
   function normalizeExerciseRow(row = {}) {
     const weight = row.weight ?? row.target_weight ?? "";
     const rawExercise = String(row.exercise ?? row.name ?? "").trim();
-    const exercise = rawExercise ? canonicalExerciseName(rawExercise) : "";
+    const exercise = rawExercise && !isPlaceholderExerciseName(rawExercise) ? canonicalExerciseName(rawExercise) : "";
     return {
       exercise_id: exercise ? presetExerciseId(exercise) : row.exercise_id || "",
       exercise,
@@ -382,6 +410,7 @@
 
   function ensureExercise(data, row, metadata = {}) {
     const name = canonicalExerciseName(row.exercise || row.name);
+    if (!name || isPlaceholderExerciseName(name)) return "";
     const matchedByName = data.exercises.find((exercise) => exercise.name.localeCompare(name, undefined, { sensitivity: "accent" }) === 0);
     const id = presetExerciseId(name);
     if (!data.exercises.some((exercise) => exercise.id === id)) {
@@ -409,7 +438,9 @@
       if (exercise?.id && exercise?.name) sourceNames.set(exercise.id, exercise.name);
     });
     const resolveExercise = (name, id) => {
-      const sourceName = name || sourceNames.get(id) || presetNameFromId(id) || "Exercise";
+      const sourceName = name || sourceNames.get(id) || presetNameFromId(id) || "";
+      if (!String(sourceName || "").trim()) return null;
+      if (isPlaceholderExerciseName(sourceName)) return null;
       const resolvedName = canonicalExerciseName(sourceName);
       return { id: presetExerciseId(resolvedName), name: resolvedName };
     };
@@ -417,6 +448,7 @@
     const mergedExercises = new Map();
     const addExercise = (exercise) => {
       const resolved = resolveExercise(exercise?.name, exercise?.id);
+      if (!resolved) return;
       const existing = mergedExercises.get(resolved.id);
       if (existing) {
         existing.active = existing.active || exercise?.active !== false;
@@ -439,28 +471,34 @@
     Object.keys(data.routines || {}).forEach((routineName) => {
       data.routines[routineName] = (data.routines[routineName] || []).map((row) => {
         const resolved = resolveExercise(row.exercise || row.name, row.exercise_id);
+        if (!resolved) return { ...row, exercise_id: "", exercise: "" };
         return { ...row, exercise_id: resolved.id, exercise: resolved.name };
       });
     });
     (data.routine_definitions || []).forEach((routine) => {
-      (routine.exercises || []).forEach((exercise) => {
+      routine.exercises = (routine.exercises || []).filter((exercise) => {
         const resolved = resolveExercise(exercise.exercise || exercise.name, exercise.exercise_id);
+        if (!resolved) return false;
         exercise.exercise_id = resolved.id;
+        return true;
       });
     });
     (data.workout_exercises || []).forEach((exercise) => {
       const resolved = resolveExercise(exercise.exercise_name || exercise.exercise || exercise.name, exercise.exercise_id);
+      if (!resolved) return;
       exercise.exercise_id = resolved.id;
       exercise.exercise_name = resolved.name;
     });
     (data.routine_logs || []).forEach((log) => {
       (log.exercises || []).forEach((exercise) => {
         const resolved = resolveExercise(exercise.exercise || exercise.name, exercise.exercise_id);
+        if (!resolved) return;
         exercise.exercise_id = resolved.id;
         exercise.exercise = resolved.name;
       });
       (log.pb_entries || []).forEach((entry) => {
         const resolved = resolveExercise(entry.exercise || entry.name, entry.exercise_id);
+        if (!resolved) return;
         entry.exercise_id = resolved.id;
         entry.exercise = resolved.name;
       });
@@ -470,14 +508,17 @@
   function ensureRoutineDefinition(data, routineName, rows) {
     const id = stableId("routine", routineName);
     const existing = data.routine_definitions.find((routine) => routine.id === id);
-    const exercises = rows.map((row, index) => ({
-      exercise_id: ensureExercise(data, row, { routine: routineName }),
-      order: index + 1,
-      default_weight: row.weight,
-      default_reps: row.reps,
-      track_pb: boolFromData(row.track_pb),
-      active: row.active !== false,
-    }));
+    const exercises = rows
+      .map((row) => ({ row, exercise_id: ensureExercise(data, row, { routine: routineName }) }))
+      .filter((item) => item.exercise_id)
+      .map((item, index) => ({
+        exercise_id: item.exercise_id,
+        order: index + 1,
+        default_weight: item.row.weight,
+        default_reps: item.row.reps,
+        track_pb: boolFromData(item.row.track_pb),
+        active: item.row.active !== false,
+      }));
     if (existing) {
       existing.name = routineName;
       existing.category = existing.category || routineName;
@@ -534,6 +575,7 @@
 
     (log.exercises || []).forEach((row, exerciseIndex) => {
       const exerciseId = ensureExercise(data, row, { routine: log.routine });
+      if (!exerciseId) return;
       const workoutExerciseId = row.workout_exercise_id || stableId("wex", sessionId, exerciseId, exerciseIndex);
       if (!data.workout_exercises.some((exercise) => exercise.id === workoutExerciseId)) {
         data.workout_exercises.push({
@@ -575,7 +617,7 @@
     data.routines = Object.keys(data.routines || {}).length ? data.routines : routinesFromLegacy(data);
     Object.keys(data.routines).forEach((name) => {
       data.routines[name] = Array.isArray(data.routines[name]) ? data.routines[name].map(normalizeExerciseRow) : [];
-      if (!data.routines[name].length) data.routines[name] = [normalizeExerciseRow({ exercise: "New Exercise" })];
+      if (!data.routines[name].length) data.routines[name] = [normalizeExerciseRow()];
       ensureRoutineDefinition(data, name, data.routines[name]);
     });
     data.selected_routine = data.routines[data.selected_routine] ? data.selected_routine : data.selected_group || Object.keys(data.routines)[0];
@@ -861,14 +903,15 @@
     return set;
   }
 
-  function addWorkoutExercise(data, sessionId, name = "New Exercise") {
+  function addWorkoutExercise(data, sessionId, name = "") {
     const sessionExercises = exercisesForSession(data, sessionId);
-    const exerciseId = ensureExercise(data, { exercise: name, active: true });
+    const exerciseName = canonicalExerciseName(name) || PRESET_EXERCISE_NAMES[0];
+    const exerciseId = ensureExercise(data, { exercise: exerciseName, active: true });
     const workoutExercise = {
       id: randomId("wex"),
       workout_session_id: sessionId,
       exercise_id: exerciseId,
-      exercise_name: cleanText(name, "New Exercise"),
+      exercise_name: exerciseName,
       order: sessionExercises.length + 1,
       track_pb: false,
     };

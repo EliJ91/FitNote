@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.19";
+  const APP_VERSION = "1.3.20";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -15,20 +15,20 @@
     selected_routine: "Pull Day",
     routines: {
       "Push Day": [
-        { exercise: "Incline Barbell Press", weight: "125", reps: "3x8", track_pb: false },
-        { exercise: "Seated Shoulder Press", weight: "67.5", reps: "3x10", track_pb: false },
+        { exercise: "Incline Barbell Bench Press", weight: "125", reps: "3x8", track_pb: false },
+        { exercise: "Seated Dumbbell Shoulder Press", weight: "67.5", reps: "3x10", track_pb: false },
         { exercise: "Cable Chest Fly", weight: "40", reps: "3x8", track_pb: false },
         { exercise: "Cable Lateral Raise", weight: "15", reps: "3x8", track_pb: false },
-        { exercise: "Cable Tricep Pushdown", weight: "45", reps: "3x10", track_pb: false },
-        { exercise: "Overhead Cable Tricep Extension", weight: "40", reps: "2x15", track_pb: false },
+        { exercise: "Cable Triceps Pushdown", weight: "45", reps: "3x10", track_pb: false },
+        { exercise: "Overhead Cable Triceps Extension", weight: "40", reps: "2x15", track_pb: false },
       ],
       "Pull Day": [
-        { exercise: "Barbell Row", weight: "100", reps: "3x8", track_pb: false },
-        { exercise: "Lat Pulldown", weight: "100", reps: "3x6", track_pb: false },
-        { exercise: "Cable Row 1 Arm", weight: "40", reps: "3x8", track_pb: false },
-        { exercise: "Face Pulls", weight: "40", reps: "3x12", track_pb: false },
-        { exercise: "Preacher Curl", weight: "30", reps: "3x10", track_pb: false },
-        { exercise: "Hammer Curl 1 Arm", weight: "15", reps: "2x10", track_pb: false },
+        { exercise: "Barbell Bent-Over Row", weight: "100", reps: "3x8", track_pb: false },
+        { exercise: "Wide-Grip Lat Pulldown", weight: "100", reps: "3x6", track_pb: false },
+        { exercise: "Single-Arm Cable Row", weight: "40", reps: "3x8", track_pb: false },
+        { exercise: "Face Pull", weight: "40", reps: "3x12", track_pb: false },
+        { exercise: "EZ-Bar Preacher Curl", weight: "30", reps: "3x10", track_pb: false },
+        { exercise: "Dumbbell Hammer Curl", weight: "15", reps: "2x10", track_pb: false },
       ],
     },
     routine_logs: [],
@@ -275,7 +275,10 @@
           localStorage.setItem(backupKey, stored);
           parsed.migration_metadata = { ...(parsed.migration_metadata || {}), backup_key: backupKey };
         }
-        return normalizeData(parsed);
+        const normalized = normalizeData(parsed);
+        const normalizedText = JSON.stringify(normalized);
+        if (normalizedText !== stored) localStorage.setItem(key, normalizedText);
+        return normalized;
       }
     } catch (_error) {
       localStorage.removeItem(key);
@@ -476,9 +479,15 @@
       );
       if (error) throw error;
       if (data?.payload) {
+        const rawPayload = JSON.stringify(data.payload);
         applyLoadedState(data.payload);
         saveState({ cloud: false });
         cloudStatus = "Synced";
+        if (JSON.stringify(state) !== rawPayload) {
+          cloudLoadActive = false;
+          await saveCloudData({ quiet: true });
+          cloudLoadActive = true;
+        }
       } else {
         const userLocalState = loadStoredState(userStorageKey(authSession.user.id));
         applyLoadedState(userLocalState || INITIAL_DATA);
@@ -982,15 +991,17 @@
     app.querySelectorAll("[data-field]").forEach((input) => {
       input.addEventListener("input", () => {
         const row = currentRows()[Number(input.dataset.index)];
-        row[input.dataset.field] = input.value;
         input.classList.remove("is-invalid");
         input.closest(".exercise-card")?.classList.remove("has-invalid");
         if (input.dataset.field === "exercise") {
           const existing = findExistingExerciseByName(input.value);
           row.exercise_id = existing ? existing.id : "";
-          if (existing) row.exercise = existing.name;
+          row.exercise = existing ? existing.name : "";
           filterExerciseOptions(input);
+          if (existing) saveState();
+          return;
         }
+        row[input.dataset.field] = input.value;
         saveState();
       });
     });
@@ -1010,7 +1021,11 @@
         row.exercise_id = button.dataset.exerciseId || "";
         row.exercise = button.dataset.exerciseName || row.exercise;
         const input = button.closest(".exercise-card")?.querySelector("[data-field='exercise']");
-        if (input) input.value = row.exercise;
+        if (input) {
+          input.value = row.exercise;
+          input.classList.remove("is-invalid");
+          input.closest(".exercise-card")?.classList.remove("has-invalid");
+        }
         const menu = button.closest("[data-exercise-option-menu]");
         if (menu) menu.hidden = true;
         saveState();
@@ -1245,12 +1260,13 @@
     app.querySelectorAll("[data-field]").forEach((input) => {
       const row = currentRows()[Number(input.dataset.index)];
       if (!row) return;
-      row[input.dataset.field] = input.value;
       if (input.dataset.field === "exercise") {
         const existing = findExistingExerciseByName(input.value);
         row.exercise_id = existing ? existing.id : "";
-        if (existing) row.exercise = existing.name;
+        row.exercise = existing ? existing.name : "";
+        return;
       }
+      row[input.dataset.field] = input.value;
     });
     currentRows().forEach((row) => {
       const exercise = String(row.exercise ?? "").trim();

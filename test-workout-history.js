@@ -139,4 +139,31 @@ function rows(data, session) {
   assert.ok(rows(data, oldPull).some((row) => row.exercise_id === exercise.id));
 }
 
+{
+  const data = history.ensureHistoricalModel(
+    {
+      selected_routine: "Empty",
+      exercises: [{ id: history.stableId("ex", "Exercise"), name: "Exercise", active: true }],
+      routines: { Empty: [{ exercise: "Exercise", weight: "", reps: "", track_pb: false }] },
+    },
+    { today: TODAY }
+  );
+  assert.deepStrictEqual(data.routines.Empty, [{ exercise_id: "", exercise: "", weight: "", reps: "", track_pb: false, active: true }]);
+  assert.strictEqual(data.routine_definitions.find((routine) => routine.name === "Empty").exercises.length, 0);
+  assert.ok(!data.exercises.some((exercise) => exercise.name === "Exercise" || exercise.name === "New Exercise"));
+}
+
+{
+  let data = migrated();
+  data.routines["Chest Day"] = [
+    { exercise: "Cable Lateral Rais", weight: "12", reps: "15", track_pb: true },
+    { exercise: "Standing Shoulder", weight: "95", reps: "8", track_pb: false },
+  ];
+  data = history.ensureHistoricalModel(data, { today: TODAY });
+  assert.deepStrictEqual(data.routines["Chest Day"].map((row) => row.exercise), [
+    "Cable Lateral Raise",
+    "Standing Barbell Overhead Press",
+  ]);
+}
+
 console.log("workout history tests passed");
