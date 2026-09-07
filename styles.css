@@ -276,8 +276,8 @@ button.is-pressing:not([disabled]) {
   max-width: 372px;
   min-height: 100%;
   display: grid;
-  grid-template-rows: minmax(clamp(340px, 49dvh, 458px), 1fr) auto auto minmax(42px, 1fr) auto;
-  gap: 18px;
+  grid-template-rows: minmax(clamp(326px, 46dvh, 430px), 1fr) auto auto minmax(42px, 1fr) auto;
+  gap: 20px;
   justify-items: stretch;
 }
 
@@ -295,7 +295,8 @@ button.is-pressing:not([disabled]) {
 
 .auth-actions {
   display: grid;
-  gap: 13px;
+  gap: 14px;
+  margin-top: clamp(20px, 3dvh, 34px);
 }
 
 .auth-copy,
@@ -306,7 +307,7 @@ button.is-pressing:not([disabled]) {
 }
 
 .auth-copy {
-  margin-top: 14px;
+  margin-top: 10px;
   font-size: 1.02rem;
 }
 
