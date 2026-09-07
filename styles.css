@@ -104,11 +104,10 @@ button.is-pressing:not([disabled]) {
   width: 58px;
   height: 36px;
   flex: 0 0 auto;
-  border: 1px solid #000;
   border-radius: 7px;
-  background: #202322;
+  background: transparent;
   object-fit: contain;
-  padding: 2px;
+  padding: 0;
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36);
 }
 
@@ -261,6 +260,9 @@ button.is-pressing:not([disabled]) {
 .auth-screen {
   grid-template-rows: 1fr;
   padding: max(34px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% 44%, rgba(20, 112, 72, 0.13), transparent 36%),
+    linear-gradient(90deg, #000 0, #020403 18%, #07100d 50%, #020403 82%, #000 100%);
 }
 
 .auth-body {
@@ -274,22 +276,21 @@ button.is-pressing:not([disabled]) {
   max-width: 372px;
   min-height: 100%;
   display: grid;
-  grid-template-rows: minmax(clamp(330px, 48dvh, 455px), 1fr) auto auto minmax(42px, 1fr) auto;
+  grid-template-rows: minmax(clamp(340px, 49dvh, 458px), 1fr) auto auto minmax(42px, 1fr) auto;
   gap: 18px;
   justify-items: stretch;
 }
 
 .auth-logo {
-  width: min(342px, 86vw);
-  max-height: 384px;
+  width: min(286px, 76vw);
+  max-height: 300px;
   justify-self: center;
   align-self: end;
-  border: 1px solid #000;
   border-radius: 0;
   object-fit: contain;
   background: transparent;
   padding: 0;
-  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.62));
+  filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.72));
 }
 
 .auth-actions {
