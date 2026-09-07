@@ -8,6 +8,250 @@
   "use strict";
 
   const HISTORY_SCHEMA_VERSION = 2;
+  const PRESET_EXERCISE_NAMES = [
+    "Barbell Bench Press",
+    "Incline Barbell Bench Press",
+    "Decline Barbell Bench Press",
+    "Dumbbell Bench Press",
+    "Incline Dumbbell Bench Press",
+    "Decline Dumbbell Bench Press",
+    "Smith Machine Bench Press",
+    "Smith Machine Incline Bench Press",
+    "Machine Chest Press",
+    "Incline Machine Chest Press",
+    "Cable Chest Press",
+    "Single-Arm Cable Chest Press",
+    "Dumbbell Chest Fly",
+    "Incline Dumbbell Chest Fly",
+    "Cable Chest Fly",
+    "Low-to-High Cable Chest Fly",
+    "High-to-Low Cable Chest Fly",
+    "Pec Deck Fly",
+    "Push-Up",
+    "Incline Push-Up",
+    "Decline Push-Up",
+    "Chest Dip",
+    "Pull-Up",
+    "Chin-Up",
+    "Wide-Grip Lat Pulldown",
+    "Close-Grip Lat Pulldown",
+    "Neutral-Grip Lat Pulldown",
+    "Single-Arm Cable Lat Pulldown",
+    "Straight-Arm Cable Pulldown",
+    "Barbell Bent-Over Row",
+    "Underhand Barbell Row",
+    "Pendlay Row",
+    "Single-Arm Dumbbell Row",
+    "Chest-Supported Dumbbell Row",
+    "Seated Cable Row",
+    "Single-Arm Cable Row",
+    "Chest-Supported Cable Row",
+    "High Cable Row",
+    "Machine Row",
+    "Chest-Supported Machine Row",
+    "T-Bar Row",
+    "Landmine Row",
+    "Inverted Row",
+    "Dumbbell Pullover",
+    "Face Pull",
+    "Barbell Shrug",
+    "Dumbbell Shrug",
+    "Cable Shrug",
+    "Back Extension",
+    "Reverse Hyperextension",
+    "Standing Barbell Overhead Press",
+    "Seated Barbell Overhead Press",
+    "Standing Dumbbell Shoulder Press",
+    "Seated Dumbbell Shoulder Press",
+    "Arnold Press",
+    "Machine Shoulder Press",
+    "Smith Machine Shoulder Press",
+    "Single-Arm Cable Shoulder Press",
+    "Barbell Push Press",
+    "Dumbbell Front Raise",
+    "Cable Front Raise",
+    "Dumbbell Lateral Raise",
+    "Cable Lateral Raise",
+    "Machine Lateral Raise",
+    "Dumbbell Rear Delt Fly",
+    "Cable Reverse Fly",
+    "Reverse Pec Deck Fly",
+    "Incline Bench Rear Delt Raise",
+    "Cable External Rotation",
+    "Cable Internal Rotation",
+    "Barbell Curl",
+    "EZ-Bar Curl",
+    "Dumbbell Curl",
+    "Incline Dumbbell Curl",
+    "Barbell Preacher Curl",
+    "EZ-Bar Preacher Curl",
+    "Dumbbell Preacher Curl",
+    "Cable Curl",
+    "Single-Arm Cable Curl",
+    "Dumbbell Hammer Curl",
+    "Cable Hammer Curl",
+    "Dumbbell Concentration Curl",
+    "EZ-Bar Spider Curl",
+    "Reverse Barbell Curl",
+    "Reverse EZ-Bar Curl",
+    "Cable Triceps Pushdown",
+    "Single-Arm Cable Triceps Pushdown",
+    "Reverse-Grip Cable Triceps Pushdown",
+    "Overhead Cable Triceps Extension",
+    "Single-Arm Overhead Cable Triceps Extension",
+    "Dumbbell Overhead Triceps Extension",
+    "EZ-Bar Lying Triceps Extension",
+    "Dumbbell Lying Triceps Extension",
+    "Close-Grip Barbell Bench Press",
+    "Close-Grip Push-Up",
+    "Triceps Dip",
+    "Barbell Wrist Curl",
+    "Barbell Reverse Wrist Curl",
+    "Dumbbell Wrist Curl",
+    "Dumbbell Reverse Wrist Curl",
+    "Barbell Back Squat",
+    "Barbell Front Squat",
+    "Barbell Box Squat",
+    "Goblet Squat",
+    "Dumbbell Squat",
+    "Smith Machine Squat",
+    "Hack Squat Machine",
+    "Barbell Hack Squat",
+    "Leg Press",
+    "Belt Squat",
+    "Bodyweight Squat",
+    "Barbell Conventional Deadlift",
+    "Barbell Sumo Deadlift",
+    "Barbell Romanian Deadlift",
+    "Dumbbell Romanian Deadlift",
+    "Barbell Stiff-Leg Deadlift",
+    "Trap-Bar Deadlift",
+    "Barbell Hip Thrust",
+    "Dumbbell Hip Thrust",
+    "Barbell Glute Bridge",
+    "Cable Pull-Through",
+    "Barbell Good Morning",
+    "Bodyweight Split Squat",
+    "Dumbbell Split Squat",
+    "Barbell Reverse Lunge",
+    "Dumbbell Reverse Lunge",
+    "Dumbbell Walking Lunge",
+    "Dumbbell Bulgarian Split Squat",
+    "Dumbbell Step-Up",
+    "Bodyweight Step-Up",
+    "Single-Leg Dumbbell Romanian Deadlift",
+    "Machine Leg Extension",
+    "Seated Leg Curl Machine",
+    "Lying Leg Curl Machine",
+    "Standing Single-Leg Curl Machine",
+    "Cable Standing Leg Curl",
+    "Nordic Hamstring Curl",
+    "Glute-Ham Raise",
+    "Machine Hip Abduction",
+    "Machine Hip Adduction",
+    "Cable Standing Hip Abduction",
+    "Cable Standing Hip Adduction",
+    "Cable Glute Kickback",
+    "Machine Glute Kickback",
+    "Barbell Standing Calf Raise",
+    "Dumbbell Standing Calf Raise",
+    "Machine Standing Calf Raise",
+    "Machine Seated Calf Raise",
+    "Leg Press Calf Raise",
+    "Bodyweight Single-Leg Calf Raise",
+    "Floor Crunch",
+    "Cable Crunch",
+    "Reverse Crunch",
+    "Bicycle Crunch",
+    "Sit-Up",
+    "Decline Bench Sit-Up",
+    "Hanging Knee Raise",
+    "Hanging Leg Raise",
+    "Captain's Chair Knee Raise",
+    "Ab Wheel Rollout",
+    "Plank",
+    "Side Plank",
+    "Dead Bug",
+    "Bird Dog",
+    "Cable Pallof Press",
+    "Cable Wood Chop",
+    "Cable Reverse Wood Chop",
+    "Dumbbell Russian Twist",
+    "Dumbbell Side Bend",
+    "Dumbbell Farmer's Carry",
+    "Barbell Power Clean",
+    "Barbell Hang Power Clean",
+    "Barbell Clean",
+    "Barbell Clean and Jerk",
+    "Barbell Power Snatch",
+    "Barbell Snatch",
+    "Barbell Hang Power Snatch",
+    "Barbell Push Jerk",
+    "Barbell Split Jerk",
+    "Barbell Thruster",
+    "Dumbbell Thruster",
+    "Kettlebell Swing",
+    "Kettlebell Clean and Press",
+    "Dumbbell Renegade Row",
+    "Burpee",
+    "Treadmill Walking",
+    "Incline Treadmill Walking",
+    "Treadmill Running",
+    "Outdoor Walking",
+    "Outdoor Running",
+    "Stationary Cycling",
+    "Outdoor Cycling",
+    "Air Bike",
+    "Elliptical Trainer",
+    "Rowing Machine",
+    "Stair Climber",
+    "Jump Rope",
+    "Swimming Freestyle",
+    "Swimming Breaststroke",
+    "Sled Push",
+  ];
+  const EXERCISE_ALIASES = {
+    "back extensions": "Back Extension",
+    "back squat": "Barbell Back Squat",
+    "barbell row": "Barbell Bent-Over Row",
+    "bench press": "Barbell Bench Press",
+    "bulgarian split squat": "Dumbbell Bulgarian Split Squat",
+    "cable row 1 arm": "Single-Arm Cable Row",
+    "cable pull through": "Cable Pull-Through",
+    "cable tricep pushdown": "Cable Triceps Pushdown",
+    "calf raises": "Machine Standing Calf Raise",
+    "face pulls": "Face Pull",
+    "hammer curl 1 arm": "Dumbbell Hammer Curl",
+    "hammer curl (cable) 1 arm": "Cable Hammer Curl",
+    "incline barbell press": "Incline Barbell Bench Press",
+    "incline bench": "Incline Barbell Bench Press",
+    "lat pulldown": "Wide-Grip Lat Pulldown",
+    "machine press": "Machine Chest Press",
+    "overhead cable tricep extension": "Overhead Cable Triceps Extension",
+    "preacher curl": "EZ-Bar Preacher Curl",
+    "romanian deadlift": "Barbell Romanian Deadlift",
+    "seated shoulder press": "Seated Dumbbell Shoulder Press",
+    "squat": "Barbell Back Squat",
+    "standing shoulder press": "Standing Barbell Overhead Press",
+  };
+
+  function exerciseKey(name) {
+    return String(name || "").trim().toLocaleLowerCase();
+  }
+
+  function presetExerciseNames() {
+    return PRESET_EXERCISE_NAMES.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }
+
+  function canonicalExerciseName(name) {
+    const text = cleanText(name, "Exercise");
+    const direct = PRESET_EXERCISE_NAMES.find((item) => exerciseKey(item) === exerciseKey(text));
+    return direct || EXERCISE_ALIASES[exerciseKey(text)] || text;
+  }
+
+  function presetExerciseId(name) {
+    return stableId("ex", canonicalExerciseName(name));
+  }
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -60,9 +304,11 @@
 
   function normalizeExerciseRow(row = {}) {
     const weight = row.weight ?? row.target_weight ?? "";
+    const rawExercise = String(row.exercise ?? row.name ?? "").trim();
+    const exercise = rawExercise ? canonicalExerciseName(rawExercise) : "";
     return {
-      exercise_id: row.exercise_id || "",
-      exercise: cleanText(row.exercise, "New Exercise"),
+      exercise_id: exercise ? presetExerciseId(exercise) : row.exercise_id || "",
+      exercise,
       weight: weight === "" ? "" : formatWeight(weight),
       reps: String(row.reps ?? row.target_reps ?? "").trim(),
       track_pb: boolFromData(row.track_pb),
@@ -135,9 +381,9 @@
   }
 
   function ensureExercise(data, row, metadata = {}) {
-    const name = cleanText(row.exercise || row.name, "Exercise");
+    const name = canonicalExerciseName(row.exercise || row.name);
     const matchedByName = data.exercises.find((exercise) => exercise.name.localeCompare(name, undefined, { sensitivity: "accent" }) === 0);
-    const id = row.exercise_id || row.id || matchedByName?.id || stableId("ex", name);
+    const id = presetExerciseId(name);
     if (!data.exercises.some((exercise) => exercise.id === id)) {
       data.exercises.push({
         id,
@@ -151,6 +397,74 @@
       matchedByName.active = true;
     }
     return id;
+  }
+
+  function presetNameFromId(id) {
+    return PRESET_EXERCISE_NAMES.find((name) => presetExerciseId(name) === id) || "";
+  }
+
+  function normalizeExerciseReferences(data) {
+    const sourceNames = new Map();
+    (data.exercises || []).forEach((exercise) => {
+      if (exercise?.id && exercise?.name) sourceNames.set(exercise.id, exercise.name);
+    });
+    const resolveExercise = (name, id) => {
+      const sourceName = name || sourceNames.get(id) || presetNameFromId(id) || "Exercise";
+      const resolvedName = canonicalExerciseName(sourceName);
+      return { id: presetExerciseId(resolvedName), name: resolvedName };
+    };
+
+    const mergedExercises = new Map();
+    const addExercise = (exercise) => {
+      const resolved = resolveExercise(exercise?.name, exercise?.id);
+      const existing = mergedExercises.get(resolved.id);
+      if (existing) {
+        existing.active = existing.active || exercise?.active !== false;
+        existing.legacy_names = Array.from(new Set([...(existing.legacy_names || []), ...(exercise?.legacy_names || []), exercise?.name].filter(Boolean)));
+        return;
+      }
+      mergedExercises.set(resolved.id, {
+        ...(exercise || {}),
+        id: resolved.id,
+        name: resolved.name,
+        active: exercise?.active === undefined ? true : boolFromData(exercise.active),
+        legacy_names: Array.from(new Set([...(exercise?.legacy_names || []), exercise?.name].filter(Boolean))),
+      });
+    };
+
+    PRESET_EXERCISE_NAMES.forEach((name) => addExercise({ id: presetExerciseId(name), name, active: true, legacy_names: [name] }));
+    (data.exercises || []).forEach(addExercise);
+    data.exercises = Array.from(mergedExercises.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+
+    Object.keys(data.routines || {}).forEach((routineName) => {
+      data.routines[routineName] = (data.routines[routineName] || []).map((row) => {
+        const resolved = resolveExercise(row.exercise || row.name, row.exercise_id);
+        return { ...row, exercise_id: resolved.id, exercise: resolved.name };
+      });
+    });
+    (data.routine_definitions || []).forEach((routine) => {
+      (routine.exercises || []).forEach((exercise) => {
+        const resolved = resolveExercise(exercise.exercise || exercise.name, exercise.exercise_id);
+        exercise.exercise_id = resolved.id;
+      });
+    });
+    (data.workout_exercises || []).forEach((exercise) => {
+      const resolved = resolveExercise(exercise.exercise_name || exercise.exercise || exercise.name, exercise.exercise_id);
+      exercise.exercise_id = resolved.id;
+      exercise.exercise_name = resolved.name;
+    });
+    (data.routine_logs || []).forEach((log) => {
+      (log.exercises || []).forEach((exercise) => {
+        const resolved = resolveExercise(exercise.exercise || exercise.name, exercise.exercise_id);
+        exercise.exercise_id = resolved.id;
+        exercise.exercise = resolved.name;
+      });
+      (log.pb_entries || []).forEach((entry) => {
+        const resolved = resolveExercise(entry.exercise || entry.name, entry.exercise_id);
+        entry.exercise_id = resolved.id;
+        entry.exercise = resolved.name;
+      });
+    });
   }
 
   function ensureRoutineDefinition(data, routineName, rows) {
@@ -270,6 +584,7 @@
     const legacyLogs = normalizeLegacyLogs(data);
     data.routine_logs = legacyLogs;
     legacyLogs.forEach((log, index) => addLegacySession(data, log, index));
+    normalizeExerciseReferences(data);
 
     const migratedAt = options.now ? nowIso(options.now) : data.migration_metadata.migrated_at || nowIso();
     data.migration_metadata = {
@@ -635,6 +950,9 @@
   return {
     HISTORY_SCHEMA_VERSION,
     clone,
+    presetExerciseNames,
+    presetExerciseId,
+    canonicalExerciseName,
     ensureHistoricalModel,
     startWorkoutSession,
     latestCompletedSession,

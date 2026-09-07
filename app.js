@@ -4,7 +4,7 @@
   const STORAGE_KEY = "workoutPlanner.web.v1";
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.18";
+  const APP_VERSION = "1.3.19";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
@@ -572,25 +572,13 @@
   }
 
   function existingExerciseOptions() {
-    const byName = new Map();
-    (state.exercises || []).forEach((exercise) => {
-      const name = String(exercise.name || "").trim();
-      if (!name) return;
-      const key = name.toLocaleLowerCase();
-      if (!byName.has(key) || exercise.active) byName.set(key, { id: exercise.id, name });
-    });
-    return Array.from(byName.values()).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    return workoutHistory.presetExerciseNames().map((name) => ({ id: workoutHistory.presetExerciseId(name), name }));
   }
 
   function findExistingExerciseByName(name) {
     const normalized = String(name || "").trim();
     if (!normalized) return null;
     return existingExerciseOptions().find((exercise) => exercise.name.localeCompare(normalized, undefined, { sensitivity: "accent" }) === 0) || null;
-  }
-
-  function selectedExerciseId(row) {
-    if (row.exercise_id && (state.exercises || []).some((exercise) => exercise.id === row.exercise_id)) return row.exercise_id;
-    return findExistingExerciseByName(row.exercise)?.id || "";
   }
 
   function currentWorkoutSession() {
@@ -878,7 +866,7 @@
       <article class="exercise-card template-card" data-index="${index}">
         <div class="card-title-row">
           <div class="exercise-name-controls" data-exercise-picker>
-            <input class="text-input exercise-name-input" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}" autocomplete="off" aria-label="Exercise name">
+            <input class="text-input exercise-name-input" data-field="exercise" data-index="${index}" value="${escapeAttr(row.exercise)}" autocomplete="off" aria-label="Exercise search" placeholder="Search exercises">
             <div class="exercise-option-menu" data-exercise-option-menu hidden>
               ${exerciseOptions
                 .map(
@@ -1000,6 +988,7 @@
         if (input.dataset.field === "exercise") {
           const existing = findExistingExerciseByName(input.value);
           row.exercise_id = existing ? existing.id : "";
+          if (existing) row.exercise = existing.name;
           filterExerciseOptions(input);
         }
         saveState();
@@ -1235,8 +1224,9 @@
     for (const [index, row] of currentRows().entries()) {
       const exercise = String(row.exercise ?? "").trim();
       const reps = String(row.reps ?? "").trim();
+      const selectedExercise = findExistingExerciseByName(exercise);
       const invalidFields = [];
-      if (!exercise) invalidFields.push("exercise");
+      if (!exercise || !selectedExercise || row.exercise_id !== selectedExercise.id) invalidFields.push("exercise");
       if (String(row.weight ?? "").trim() === "") invalidFields.push("weight");
       if (!reps) invalidFields.push("reps");
       if (invalidFields.length) {
@@ -1245,7 +1235,7 @@
       }
     }
     if (firstInvalid) {
-        showToast("Each exercise needs a name, reps, and a valid weight.");
+        showToast("Select an exercise, then enter reps and weight.");
         return false;
     }
     return true;
@@ -1259,6 +1249,7 @@
       if (input.dataset.field === "exercise") {
         const existing = findExistingExerciseByName(input.value);
         row.exercise_id = existing ? existing.id : "";
+        if (existing) row.exercise = existing.name;
       }
     });
     currentRows().forEach((row) => {
@@ -1309,7 +1300,8 @@
       return;
     }
     currentRows().push({
-      exercise: "New Exercise",
+      exercise_id: "",
+      exercise: "",
       weight: "",
       reps: "",
       track_pb: false,
@@ -1404,7 +1396,7 @@
         status.textContent = "That routine already exists.";
         return;
       }
-      state.routines[name] = [{ exercise: "New Exercise", weight: "", reps: "", track_pb: false }];
+      state.routines[name] = [{ exercise_id: "", exercise: "", weight: "", reps: "", track_pb: false }];
       state.selected_routine = name;
       dataSelection = { kind: "routine", value: name };
       editMode = true;
@@ -1992,7 +1984,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=39", { updateViaCache: "none" })
+        .register("sw.js?v=40", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

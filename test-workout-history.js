@@ -21,14 +21,16 @@ function rows(data, session) {
 {
   const data = migrated();
   assert.strictEqual(data.history_version, history.HISTORY_SCHEMA_VERSION);
-  assert.ok(data.exercises.length >= 15);
+  assert.ok(data.exercises.length >= history.presetExerciseNames().length);
   assert.ok(data.routine_definitions.length >= 3);
   assert.ok(completedSessions(data).length >= 8);
   assert.ok(data.workout_sets.length >= 56);
   const push = completedSessions(data, "Push Day").find((session) => session.started_at.startsWith("2026-08-09"));
-  const incline = rows(data, push).find((row) => row.exercise === "Incline Barbell Press");
+  const incline = rows(data, push).find((row) => row.exercise === "Incline Barbell Bench Press");
   assert.deepStrictEqual(incline.sets.map((set) => `${set.weight}x${set.reps}`), ["125x8", "125x8", "125x8"]);
   assert.ok(incline.sets.every((set) => set.legacy_source === "legacy_summary"));
+  assert.strictEqual(incline.exercise_id, history.presetExerciseId("Incline Barbell Bench Press"));
+  assert.ok(data.routines["Push Day"].some((row) => row.exercise === "Cable Triceps Pushdown"));
 }
 
 {
@@ -42,14 +44,14 @@ function rows(data, session) {
 {
   const data = migrated();
   const session = history.startWorkoutSession(data, "Push Day", { today: TODAY, now: new Date("2026-09-02T10:00:00.000Z") });
-  const incline = rows(data, session).find((row) => row.exercise === "Incline Barbell Press");
+  const incline = rows(data, session).find((row) => row.exercise === "Incline Barbell Bench Press");
   assert.deepStrictEqual(incline.sets.map((set) => `${set.weight}x${set.reps}:${set.completed}`), [
     "125x8:false",
     "125x8:false",
     "125x8:false",
   ]);
   const previous = history.latestCompletedSession(data, "Push Day", session.id);
-  const previousIncline = rows(data, previous).find((row) => row.exercise === "Incline Barbell Press");
+  const previousIncline = rows(data, previous).find((row) => row.exercise === "Incline Barbell Bench Press");
   history.updateWorkoutSet(data, incline.sets[0].id, "weight", "130");
   history.updateWorkoutSet(data, incline.sets[0].id, "reps", "7");
   assert.strictEqual(previousIncline.sets[0].weight, "125");
@@ -61,7 +63,7 @@ function rows(data, session) {
   data.routines["Push Day"].push({ exercise: "Machine Press", weight: "80", reps: "2x12", track_pb: false });
   data = history.ensureHistoricalModel(data, { today: TODAY });
   const session = history.startWorkoutSession(data, "Push Day", { today: TODAY, now: new Date("2026-09-02T10:30:00.000Z") });
-  const machinePress = rows(data, session).find((row) => row.exercise === "Machine Press");
+  const machinePress = rows(data, session).find((row) => row.exercise === "Machine Chest Press");
   assert.ok(machinePress);
   assert.deepStrictEqual(machinePress.sets.map((set) => `${set.weight}x${set.reps}:${set.completed}`), [
     "80x12:false",
@@ -72,13 +74,13 @@ function rows(data, session) {
 {
   const data = migrated();
   const session = history.startWorkoutSession(data, "Pull Day", { today: TODAY, now: new Date("2026-09-02T11:00:00.000Z") });
-  const pulldown = rows(data, session).find((row) => row.exercise === "Lat Pulldown");
+  const pulldown = rows(data, session).find((row) => row.exercise === "Wide-Grip Lat Pulldown");
   history.updateWorkoutSet(data, pulldown.sets[0].id, "completed", true, { now: new Date("2026-09-02T11:05:00.000Z") });
   assert.strictEqual(history.setsForWorkoutExercise(data, pulldown.workout_exercise_id)[0].timestamp, "2026-09-02T11:05:00.000Z");
   history.completeWorkoutSession(data, session.id, { now: new Date("2026-09-02T12:00:00.000Z") });
   const reopened = history.startWorkoutSession(data, "Pull Day", { today: TODAY, now: new Date("2026-09-02T17:00:00.000Z") });
   assert.strictEqual(reopened.id, session.id);
-  const laterPulldown = rows(data, reopened).find((row) => row.exercise === "Lat Pulldown");
+  const laterPulldown = rows(data, reopened).find((row) => row.exercise === "Wide-Grip Lat Pulldown");
   history.addWorkoutSet(data, laterPulldown.workout_exercise_id);
   assert.strictEqual(history.setsForWorkoutExercise(data, laterPulldown.workout_exercise_id).length, 4);
 }
@@ -97,13 +99,13 @@ function rows(data, session) {
   data.routines["Chest Day"] = [{ exercise: "Incline Bench", weight: "115", reps: "5x8", track_pb: true }];
   data = history.ensureHistoricalModel(data, { today: TODAY });
   const session = history.startWorkoutSession(data, "Chest Day", { today: TODAY, now: new Date("2026-09-02T13:30:00.000Z") });
-  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Bench"]);
+  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Barbell Bench Press"]);
   data.routines["Chest Day"].push({ exercise: "Standing Shoulder Press", weight: "95", reps: "5x8", track_pb: true });
   data = history.ensureHistoricalModel(data, { today: TODAY });
   assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), true);
   assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), false);
   const chestRows = rows(data, session);
-  assert.deepStrictEqual(chestRows.map((row) => row.exercise), ["Incline Bench", "Standing Shoulder Press"]);
+  assert.deepStrictEqual(chestRows.map((row) => row.exercise), ["Incline Barbell Bench Press", "Standing Barbell Overhead Press"]);
   assert.strictEqual(chestRows[0].track_pb, true);
   assert.strictEqual(chestRows[1].track_pb, true);
   assert.deepStrictEqual(chestRows[1].sets.map((set) => `${set.weight}x${set.reps}:${set.completed}`), [
@@ -125,7 +127,7 @@ function rows(data, session) {
   data = history.ensureHistoricalModel(data, { today: TODAY });
   assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id), false);
   assert.strictEqual(history.syncWorkoutSessionWithRoutine(data, session.id, { includeCompleted: true }), true);
-  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Bench", "Standing Shoulder Press"]);
+  assert.deepStrictEqual(rows(data, session).map((row) => row.exercise), ["Incline Barbell Bench Press", "Standing Barbell Overhead Press"]);
 }
 
 {
