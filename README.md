@@ -2,6 +2,8 @@
 
 A mobile-first fitness log and routine tracker. The web app stores routines, workout history, and PB data in the browser with `localStorage`, and can sync signed-in users through Supabase.
 
+Live app: https://elij91.github.io/FitNote/
+
 ## Run
 
 Open `index.html` in a browser, or serve the folder locally:
