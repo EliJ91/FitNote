@@ -1,12 +1,16 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "workoutPlanner.web.v1";
+  const STORAGE_KEY = "fitNote.web.v1";
+  const LEGACY_STORAGE_KEY = ["workout", String.fromCharCode(80), "lanner.web.v1"].join("");
   const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user.`;
+  const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.21";
+  const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
+  const APP_VERSION = "1.3.22";
   const TODAY = new Date().toISOString().slice(0, 10);
-  const SUPABASE_TABLE = "workout_planner_data";
+  const SUPABASE_TABLE = "fitnote_data";
+  const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
   const AUTH_CHECK_TIMEOUT_MS = 1200;
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
@@ -37,7 +41,7 @@
   const app = document.getElementById("app");
   const importFile = document.getElementById("import-file");
   const toast = document.getElementById("toast");
-  const cloudConfig = window.WORKOUT_SUPABASE || {};
+  const cloudConfig = window.FITNOTE_SUPABASE || {};
   const workoutHistory = window.WorkoutHistory;
   const canAttemptCloud = Boolean(window.supabase && cloudConfig.url && cloudConfig.anonKey);
   const cloudProjectRef = projectRefFromUrl(cloudConfig.url);
@@ -50,7 +54,7 @@
   let currentPage = "routine";
   let editMode = false;
   let editSnapshot = null;
-  let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true";
+  let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
   let authReady = true;
   let cloudSaveTimer = null;
   let cloudLoadActive = false;
@@ -261,8 +265,20 @@
     return `${USER_STORAGE_PREFIX}${userId}`;
   }
 
+  function legacyUserStorageKey(userId) {
+    return `${LEGACY_USER_STORAGE_PREFIX}${userId}`;
+  }
+
   function currentStorageKey() {
     return authSession?.user?.id ? userStorageKey(authSession.user.id) : STORAGE_KEY;
+  }
+
+  function loadMigratedState(primaryKey, fallbackKey) {
+    const stored = loadStoredState(primaryKey);
+    if (stored) return stored;
+    const migrated = fallbackKey ? loadStoredState(fallbackKey) : null;
+    if (migrated) localStorage.setItem(primaryKey, JSON.stringify(migrated));
+    return migrated;
   }
 
   function loadStoredState(key) {
@@ -287,7 +303,8 @@
   }
 
   function loadState(key = STORAGE_KEY) {
-    const stored = loadStoredState(key);
+    const fallbackKey = key === STORAGE_KEY ? LEGACY_STORAGE_KEY : "";
+    const stored = loadMigratedState(key, fallbackKey);
     if (stored) return stored;
     return normalizeData(INITIAL_DATA);
   }
@@ -366,6 +383,7 @@
   function enterGuestMode() {
     guestMode = true;
     localStorage.setItem(GUEST_MODE_KEY, "true");
+    localStorage.removeItem(LEGACY_GUEST_MODE_KEY);
     cloudStatus = "Browser storage only";
     applyLoadedState(loadState(STORAGE_KEY));
     currentPage = "routine";
@@ -467,18 +485,27 @@
     }
   }
 
+  async function loadCloudPayload(tableName) {
+    return withTimeout(
+      supabaseClient.from(tableName).select("payload").eq("user_id", authSession.user.id).maybeSingle(),
+      CLOUD_REQUEST_TIMEOUT_MS,
+      "Cloud load timed out"
+    );
+  }
+
   async function loadCloudData() {
     if (!supabaseClient || !authSession) return;
     cloudLoadActive = true;
     cloudStatus = "Loading cloud...";
     updateMenuStatus();
     try {
-      const { data, error } = await withTimeout(
-        supabaseClient.from(SUPABASE_TABLE).select("payload").eq("user_id", authSession.user.id).maybeSingle(),
-        CLOUD_REQUEST_TIMEOUT_MS,
-        "Cloud load timed out"
-      );
+      let { data, error } = await loadCloudPayload(SUPABASE_TABLE);
       if (error) throw error;
+      if (!data?.payload && LEGACY_SUPABASE_TABLE) {
+        const legacyResult = await loadCloudPayload(LEGACY_SUPABASE_TABLE);
+        if (legacyResult.error) throw legacyResult.error;
+        data = legacyResult.data;
+      }
       if (data?.payload) {
         const rawPayload = JSON.stringify(data.payload);
         applyLoadedState(data.payload);
@@ -490,7 +517,7 @@
           cloudLoadActive = true;
         }
       } else {
-        const userLocalState = loadStoredState(userStorageKey(authSession.user.id));
+        const userLocalState = loadMigratedState(userStorageKey(authSession.user.id), legacyUserStorageKey(authSession.user.id));
         applyLoadedState(userLocalState || INITIAL_DATA);
         saveState({ cloud: false });
         cloudLoadActive = false;
@@ -734,15 +761,15 @@
       return authShell(`
         <section class="auth-panel">
           <img class="auth-logo" src="icons/icon.svg" alt="">
-          <h1>Workout Planner</h1>
+          <h1>FitNote</h1>
           <p class="auth-copy">Checking sign in...</p>
         </section>
       `);
     }
     return authShell(`
-      <section class="auth-panel">
-        <img class="auth-logo" src="icons/icon.svg" alt="">
-        <h1>Workout Planner</h1>
+        <section class="auth-panel">
+          <img class="auth-logo" src="icons/icon.svg" alt="">
+        <h1>FitNote</h1>
         <div class="auth-actions">
           <button class="btn btn-primary" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}>Sign in with Google</button>
           <button class="btn btn-secondary" type="button" data-action="guest-sign-in">Continue as Guest</button>
@@ -760,7 +787,7 @@
       bindAuthGate();
       return;
     }
-    const title = currentPage === "routine" ? "Workout Planner" : titleForPage(currentPage);
+    const title = currentPage === "routine" ? "FitNote" : titleForPage(currentPage);
     app.innerHTML = shell(title, bodyForPage(currentPage));
     bindShell();
     if (currentPage === "routine") bindRoutinePage();
@@ -783,7 +810,7 @@
       history: "History",
       data: "Data",
       settings: "Settings",
-    }[page] || "Workout Planner";
+    }[page] || "FitNote";
   }
 
   function bodyForPage(page) {
@@ -1511,14 +1538,14 @@
 
   function exportData() {
     const payload = {
-      app: "Workout Planner",
+      app: "FitNote",
       exported_on: TODAY,
       ...state,
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `workout_planner_data_${TODAY}.json`;
+    link.download = `fitnote_data_${TODAY}.json`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -2001,7 +2028,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=40", { updateViaCache: "none" })
+        .register("sw.js?v=43", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

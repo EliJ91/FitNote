@@ -1,6 +1,6 @@
-# Workout Planner
+# FitNote
 
-A mobile-first browser workout planner and tracker. The web app stores routines, workout history, and PB data in the browser with `localStorage`, and can sync signed-in users through Supabase.
+A mobile-first fitness log and routine tracker. The web app stores routines, workout history, and PB data in the browser with `localStorage`, and can sync signed-in users through Supabase.
 
 ## Run
 
@@ -34,4 +34,4 @@ Browser storage keeps one versioned historical model: canonical exercise names, 
 
 ## Supabase
 
-The live app is configured for the `Workout Planner` Supabase project. The database schema is mirrored in `supabase/schema.sql`. Only the publishable browser key is stored in this repo; Google OAuth client secrets stay in Supabase/Google Cloud.
+The live app is configured for the `FitNote` Supabase project. The database schema is mirrored in `supabase/schema.sql`. Only the publishable browser key is stored in this repo; Google OAuth client secrets stay in Supabase/Google Cloud.

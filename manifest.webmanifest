@@ -1,11 +1,11 @@
 {
-  "name": "Workout Planner",
-  "short_name": "Planner",
+  "name": "FitNote",
+  "short_name": "FitNote",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#020916",
   "theme_color": "#020916",
-  "description": "A mobile-friendly workout planner and tracker.",
+  "description": "A mobile-friendly fitness log and routine tracker.",
   "icons": [
     {
       "src": "icons/icon.svg",

@@ -1,9 +1,9 @@
 const assert = require("assert");
 const fs = require("fs");
 const path = require("path");
-const history = require("./workout-history");
+const history = require("./fitnote-history");
 
-const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "workout_data.json"), "utf8"));
+const fixture = JSON.parse(fs.readFileSync(path.join(__dirname, "fitnote_data.json"), "utf8"));
 const TODAY = "2026-09-02";
 
 function migrated() {
