@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.22";
+  const APP_VERSION = "1.3.23";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
@@ -42,7 +42,7 @@
   const importFile = document.getElementById("import-file");
   const toast = document.getElementById("toast");
   const cloudConfig = window.FITNOTE_SUPABASE || {};
-  const workoutHistory = window.WorkoutHistory;
+  const workoutHistory = window.FitNoteHistory;
   const canAttemptCloud = Boolean(window.supabase && cloudConfig.url && cloudConfig.anonKey);
   const cloudProjectRef = projectRefFromUrl(cloudConfig.url);
   const supabaseStorageKey = cloudProjectRef ? `sb-${cloudProjectRef}-auth-token` : "";
@@ -2028,7 +2028,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=43", { updateViaCache: "none" })
+        .register("sw.js?v=44", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
