@@ -7,10 +7,10 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.31";
+  const APP_VERSION = "1.3.32";
   const TODAY = new Date().toISOString().slice(0, 10);
-  const SUPABASE_TABLE = "fitnote_data";
-  const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
+  const SUPABASE_TABLE = "workout_planner_data";
+  const LEGACY_SUPABASE_TABLE = "fitnote_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
@@ -516,11 +516,12 @@
     updateMenuStatus();
     try {
       let { data, error } = await loadCloudPayload(SUPABASE_TABLE);
-      if (error) throw error;
-      if (!data?.payload && LEGACY_SUPABASE_TABLE) {
+      if (error && LEGACY_SUPABASE_TABLE) {
         const legacyResult = await loadCloudPayload(LEGACY_SUPABASE_TABLE);
-        if (legacyResult.error) throw legacyResult.error;
+        if (legacyResult.error) throw error;
         data = legacyResult.data;
+      } else if (error) {
+        throw error;
       }
       if (data?.payload) {
         const rawPayload = JSON.stringify(data.payload);
@@ -2238,7 +2239,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=52", { updateViaCache: "none" })
+        .register("sw.js?v=53", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
