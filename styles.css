@@ -280,13 +280,13 @@ button.is-pressing:not([disabled]) {
 .home-branding {
   display: grid;
   justify-items: center;
-  gap: 4px;
+  gap: 2px;
   text-align: center;
 }
 
 .home-logo {
-  width: 72px;
-  height: 72px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
   filter: drop-shadow(0 0 18px rgba(22, 230, 125, 0.2));
 }
@@ -294,7 +294,7 @@ button.is-pressing:not([disabled]) {
 .home-wordmark {
   display: flex;
   align-items: baseline;
-  font-size: 2.35rem;
+  font-size: 2.15rem;
   font-weight: 850;
   letter-spacing: 0;
   line-height: 0.95;
@@ -315,10 +315,10 @@ button.is-pressing:not([disabled]) {
 }
 
 .home-welcome {
-  margin: 14px 0 12px;
+  margin: 9px 0 10px;
   text-align: center;
   color: var(--text);
-  font-size: 1.7rem;
+  font-size: 1.52rem;
   line-height: 1.1;
 }
 
@@ -413,9 +413,9 @@ button.is-pressing:not([disabled]) {
 
 .snapshot-item small {
   margin-top: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-height: 2.3em;
+  overflow-wrap: normal;
+  white-space: normal;
   font-size: 0.68rem;
   line-height: 1.15;
 }
@@ -1613,18 +1613,18 @@ tr.selected td {
   }
 
   .home-logo {
-    width: 84px;
-    height: 84px;
+    width: 68px;
+    height: 68px;
   }
 
   .home-wordmark {
-    font-size: 2.5rem;
+    font-size: 2.25rem;
   }
 
   .home-welcome {
-    margin-top: 22px;
-    margin-bottom: 20px;
-    font-size: 1.72rem;
+    margin-top: 12px;
+    margin-bottom: 12px;
+    font-size: 1.56rem;
   }
 
   .snapshot-panel,
