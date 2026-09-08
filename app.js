@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.34";
+  const APP_VERSION = "1.3.35";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const LEGACY_SUPABASE_TABLE = "fitnote_data";
@@ -15,7 +15,6 @@
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
   const INITIAL_DATA = {
-    settings: { always_on_top: false },
     selected_routine: "Pull Day",
     routines: {
       "Push Day": [
@@ -273,7 +272,7 @@
   function normalizeData(input) {
     const source = input && typeof input === "object" ? input : {};
     const data = workoutHistory.ensureHistoricalModel(source, { today: TODAY });
-    data.settings = { ...data.settings, always_on_top: boolFromData(data.settings?.always_on_top) };
+    delete data.settings;
     return data;
   }
 
@@ -849,16 +848,6 @@
     return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
-  function homeDaysSince(date) {
-    if (!date) return "No workouts yet";
-    const today = new Date(`${TODAY}T12:00:00`);
-    const previous = new Date(`${date}T12:00:00`);
-    const days = Math.max(0, Math.floor((today - previous) / 86400000));
-    if (days === 0) return "Today";
-    if (days === 1) return "1 Day";
-    return `${days} Days`;
-  }
-
   function homeSuggestedRoutine(lastSession) {
     const routines = routineNames();
     if (!routines.length) return "Create a routine";
@@ -965,11 +954,6 @@
                 <span>Next Suggested</span>
                 <strong>${escapeHtml(homeSuggestedRoutine(lastSession))}</strong>
                 <small>${lastSession ? "Keep your rotation moving" : "Ready when you are"}</small>
-              </div>
-              <div class="snapshot-item">
-                <span>Since Last Workout</span>
-                <strong>${escapeHtml(homeDaysSince(lastDate))}</strong>
-                <small>${lastDate ? "Keep the momentum" : "Your history starts here"}</small>
               </div>
             </div>
           </section>
@@ -1680,13 +1664,6 @@
             ${cloudFooterStatus()}
           </div>
         </section>
-        <section class="settings-section">
-          <p class="section-label">Preferences</p>
-          <label class="checkbox-row">
-            <button class="switch ${state.settings.always_on_top ? "on" : ""}" type="button" data-action="toggle-top"></button>
-            <span>Always On Top</span>
-          </label>
-        </section>
         <p class="settings-version">FitNote Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `;
@@ -1694,11 +1671,6 @@
 
   function bindSettingsPage() {
     bindCloudSettings();
-    app.querySelector("[data-action='toggle-top']").addEventListener("click", () => {
-      state.settings.always_on_top = !state.settings.always_on_top;
-      saveState();
-      render();
-    });
   }
 
   function renderHistoryPage() {
@@ -2248,7 +2220,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=56", { updateViaCache: "none" })
+        .register("sw.js?v=57", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

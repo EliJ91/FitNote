@@ -772,7 +772,7 @@
     normalizeExistingV2(data);
     const previousSourceCounts = data.migration_metadata.source_counts || {};
     data.history_version = HISTORY_SCHEMA_VERSION;
-    data.settings = data.settings && typeof data.settings === "object" ? data.settings : { always_on_top: false };
+    delete data.settings;
     data.routines = Object.keys(data.routines || {}).length ? data.routines : routinesFromLegacy(data);
     Object.keys(data.routines).forEach((name) => {
       data.routines[name] = Array.isArray(data.routines[name]) ? data.routines[name].map(normalizeExerciseRow) : [];
