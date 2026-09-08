@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.38";
+  const APP_VERSION = "1.3.39";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -1137,7 +1137,7 @@
     return `
       <section class="home-page">
         <div class="home-content">
-          ${renderAppBrandHeader({ userName: true })}
+          ${renderAppBrandHeader()}
           <h1 class="home-welcome">Welcome back</h1>
 
           <section class="home-panel snapshot-panel">
@@ -2507,7 +2507,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=60", { updateViaCache: "none" })
+        .register("sw.js?v=61", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

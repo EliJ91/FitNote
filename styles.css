@@ -657,7 +657,7 @@ button.is-pressing:not([disabled]) {
   min-height: 78px;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 15px;
-  align-items: center;
+  align-items: start;
   gap: 7px;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
@@ -697,9 +697,9 @@ button.is-pressing:not([disabled]) {
 .routine-card-copy strong,
 .routine-card-copy small {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  overflow-wrap: break-word;
+  white-space: normal;
 }
 
 .routine-card-copy strong {
@@ -710,25 +710,30 @@ button.is-pressing:not([disabled]) {
 .routine-card-copy small {
   color: var(--muted);
   font-size: calc(0.58rem * var(--ui-text-scale));
+  line-height: 1.2;
 }
 
 .routine-card-meta {
   min-width: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  gap: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
   color: var(--muted);
   font-size: calc(0.54rem * var(--ui-text-scale));
 }
 
 .routine-card-meta span {
   min-width: 0;
+  max-width: 100%;
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  line-height: 1.15;
 }
 
 .routine-card-meta .icon {
@@ -739,6 +744,7 @@ button.is-pressing:not([disabled]) {
 
 .routine-card-chevron {
   color: #24ee87;
+  margin-top: 2px;
 }
 
 .routine-card-chevron .icon {
@@ -1943,6 +1949,10 @@ tr.selected td {
     grid-template-columns: 38px minmax(0, 1fr) 13px;
     gap: 6px;
     padding: 7px;
+  }
+
+  .routine-card-grid {
+    grid-template-columns: 1fr;
   }
 
   .routine-card-art {
