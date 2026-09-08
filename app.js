@@ -546,8 +546,7 @@
       cloudStatus = isDatabaseFullError(error) ? "Database full" : "Cloud sync failed";
       if (isDatabaseFullError(error)) cloudDatabaseFull = true;
       if (/failed to fetch|network|timed out|abort/i.test(String(error?.message || error))) markCloudUnavailable();
-      const detail = error?.code || error?.status || error?.message || "unknown error";
-      showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : `Cloud data unavailable: ${detail}`);
+      showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : "Cloud data unavailable.");
     } finally {
       cloudLoadActive = false;
       render();
