@@ -7,14 +7,15 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.36";
+  const APP_VERSION = "1.3.38";
   const TODAY = new Date().toISOString().slice(0, 10);
-  const SUPABASE_TABLE = "workout_planner_data";
-  const LEGACY_SUPABASE_TABLE = "fitnote_data";
+  const SUPABASE_TABLE = "fitnote_data";
+  const LEGACY_SUPABASE_TABLE = "workout_planner_data";
   const AUTH_CHECK_TIMEOUT_MS = 1200;
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
   const INITIAL_DATA = {
+    settings: { text_size: "normal" },
     selected_routine: "Pull Day",
     routines: {
       "Push Day": [
@@ -42,6 +43,25 @@
   const toast = document.getElementById("toast");
   const cloudConfig = window.FITNOTE_SUPABASE || {};
   const workoutHistory = window.FitNoteHistory;
+  const ROUTINE_IMAGE_LABELS = {
+    Abdominals: "Abdominals",
+    Biceps: "Biceps",
+    Calves: "Calves",
+    Chest: "Chest",
+    Forearms: "Forearms",
+    FrontDelts: "Front Delts",
+    FullBack: "Full Back",
+    FullChest: "Full Chest",
+    FullLegs: "Full Legs",
+    Glutes: "Glutes",
+    Hamstrings: "Hamstrings",
+    Lats: "Lats",
+    LowerBack: "Lower Back",
+    Quads: "Quads",
+    RearDelts: "Rear Delts",
+    Traps: "Traps",
+    Triceps: "Triceps",
+  };
   const canAttemptCloud = Boolean(window.supabase && cloudConfig.url && cloudConfig.anonKey);
   const cloudProjectRef = projectRefFromUrl(cloudConfig.url);
   const supabaseStorageKey = cloudProjectRef ? `sb-${cloudProjectRef}-auth-token` : "";
@@ -49,10 +69,12 @@
 
   let authSession = null;
   let state = loadState();
+  let cloudWriteTable = SUPABASE_TABLE;
   let currentSessionId = null;
   let currentPage = "home";
   let routinesSearchTerm = "";
   let routinesCategory = "All";
+  let newRoutineImageId = "";
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -273,11 +295,60 @@
     return Number.isFinite(parsed) && parsed >= 0;
   }
 
+  function normalizeTextSize(value) {
+    return workoutHistory.normalizeTextSize ? workoutHistory.normalizeTextSize(value) : ["small", "large"].includes(value) ? value : "normal";
+  }
+
+  function currentTextSize() {
+    return normalizeTextSize(state?.settings?.text_size);
+  }
+
+  function applyAppShellClass() {
+    app.className = `app-shell text-size-${currentTextSize()}`;
+  }
+
   function normalizeData(input) {
     const source = input && typeof input === "object" ? input : {};
     const data = workoutHistory.ensureHistoricalModel(source, { today: TODAY });
-    delete data.settings;
+    data.settings = {
+      text_size: normalizeTextSize(data.settings?.text_size || source.settings?.text_size),
+    };
     return data;
+  }
+
+  function routineImageOptions() {
+    return workoutHistory.routineImageIds().map((id) => ({
+      id,
+      label: ROUTINE_IMAGE_LABELS[id] || id,
+    }));
+  }
+
+  function routineImageById(id) {
+    const normalized = workoutHistory.normalizeRoutineImageId(id);
+    return routineImageOptions().find((option) => option.id === normalized) || routineImageOptions()[0];
+  }
+
+  function routineDefinition(name) {
+    return (state.routine_definitions || []).find((routine) => routine.name === name) || null;
+  }
+
+  function routineImageId(name) {
+    return workoutHistory.routineImageIdFor(name, state.routines[name] || [], routineDefinition(name)?.image_id);
+  }
+
+  function routineImagePath(id) {
+    const image = routineImageById(id);
+    return `assets/routine-images/${image.id}.png`;
+  }
+
+  function setRoutineImageId(name, imageId) {
+    const selected = workoutHistory.normalizeRoutineImageId(imageId);
+    if (!selected || !state.routines[name]) return false;
+    state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
+    const definition = routineDefinition(name);
+    if (!definition) return false;
+    definition.image_id = selected;
+    return true;
   }
 
   function userStorageKey(userId) {
@@ -471,20 +542,29 @@
     cloudStatus = "Syncing...";
     try {
       const payload = normalizeData(state);
-      const { error } = await withTimeout(
-        supabaseClient.from(SUPABASE_TABLE).upsert(
-          {
-            user_id: authSession.user.id,
-            payload,
-          },
-          { onConflict: "user_id" }
-        ),
-        CLOUD_REQUEST_TIMEOUT_MS,
-        "Cloud save timed out"
-      );
-      if (error) throw error;
-      cloudStatus = "Synced";
-      return { ok: true };
+      let firstError = null;
+      const tables = Array.from(new Set([cloudWriteTable, SUPABASE_TABLE, LEGACY_SUPABASE_TABLE].filter(Boolean)));
+      for (const tableName of tables) {
+        const { error } = await withTimeout(
+          supabaseClient.from(tableName).upsert(
+            {
+              user_id: authSession.user.id,
+              payload,
+            },
+            { onConflict: "user_id" }
+          ),
+          CLOUD_REQUEST_TIMEOUT_MS,
+          "Cloud save timed out"
+        );
+        if (!error) {
+          cloudWriteTable = tableName;
+          cloudStatus = "Synced";
+          return { ok: true };
+        }
+        firstError = firstError || error;
+        if (isDatabaseFullError(error)) throw error;
+      }
+      throw firstError;
     } catch (error) {
       if (isDatabaseFullError(error)) {
         cloudDatabaseFull = true;
@@ -523,8 +603,11 @@
         const legacyResult = await loadCloudPayload(LEGACY_SUPABASE_TABLE);
         if (legacyResult.error) throw error;
         data = legacyResult.data;
+        cloudWriteTable = LEGACY_SUPABASE_TABLE;
       } else if (error) {
         throw error;
+      } else {
+        cloudWriteTable = SUPABASE_TABLE;
       }
       if (data?.payload) {
         const rawPayload = JSON.stringify(data.payload);
@@ -694,10 +777,24 @@
       showToast("Sign in with Google to create routines.");
       return;
     }
+    if (page === "new") newRoutineImageId = "";
     currentPage = page;
     if (page !== "routine") closeEditMode(false);
     selectedHistory = new Set();
     render();
+  }
+
+  function renderAppBrandHeader(options = {}) {
+    const name = options.userName ? homeDisplayName() : "";
+    return `
+      <header class="app-brand-header ${name ? "with-user" : ""}">
+        <div class="app-brand-lockup">
+          <img class="app-brand-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
+          <span>FitNote</span>
+        </div>
+        ${name ? `<span class="app-user-name">${escapeHtml(name)}</span>` : ""}
+      </header>
+    `;
   }
 
   function showToast(message) {
@@ -748,11 +845,9 @@
   function shell(title, body) {
     return `
       <section class="screen">
-        <header class="topbar">
-          <div class="brand-lockup">
-            <img class="brand-mark" src="icons/fitnote-app-logo.png" alt="">
-            <h1>${escapeHtml(title)}</h1>
-          </div>
+        <header class="topbar app-page-header">
+          ${renderAppBrandHeader()}
+          <h1>${escapeHtml(title)}</h1>
         </header>
         <main class="page-body">${body}</main>
         ${renderBottomNav(currentPage)}
@@ -791,6 +886,7 @@
   }
 
   function render() {
+    applyAppShellClass();
     if (!canEnterApp()) {
       closeEditMode(false);
       app.innerHTML = renderAuthGate();
@@ -807,7 +903,7 @@
       bindRoutinesPage();
       return;
     }
-    const title = currentPage === "routine" ? "FitNote" : titleForPage(currentPage);
+    const title = titleForPage(currentPage);
     app.innerHTML = shell(title, bodyForPage(currentPage));
     bindShell();
     if (currentPage === "routine") bindRoutinePage();
@@ -828,6 +924,7 @@
     return {
       home: "FitNote",
       routines: "Routines",
+      routine: "Workout",
       new: "New Routine",
       history: "History",
       data: "Data",
@@ -865,27 +962,6 @@
     if (!lastSession) return currentRoutine();
     const lastIndex = routines.indexOf(lastSession.routine_name);
     return routines[(lastIndex + 1 + routines.length) % routines.length] || currentRoutine();
-  }
-
-  function homeRecentActivity() {
-    const session = historySessions()[0];
-    if (!session) return [];
-    return workoutHistory
-      .sessionRows(state, session.id)
-      .map((row) => {
-        const completed = row.sets.filter((set) => boolFromData(set.completed));
-        const usable = completed.length ? completed : row.sets;
-        const best = usable
-          .slice()
-          .sort((a, b) => (Number(b.weight) || 0) - (Number(a.weight) || 0))[0];
-        if (!best || (!String(best.weight || "").trim() && !String(best.reps || "").trim())) return null;
-        return {
-          exercise: row.exercise,
-          value: `${formatWeight(best.weight) || "Bodyweight"} x ${best.reps || "-"}`,
-        };
-      })
-      .filter(Boolean)
-      .slice(0, 3);
   }
 
   function homeWorkoutCountThisWeek() {
@@ -1001,13 +1077,13 @@
     return `
       <section class="routines-page">
         <div class="routines-content">
-          <header class="routines-brand">
-            <img class="routines-brand-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
-            <span>FitNote</span>
-          </header>
-          <div class="routines-heading">
-            <h1>Select Routine</h1>
-            <p>Pick a routine to start today.</p>
+          ${renderAppBrandHeader()}
+          <div class="routines-heading-row">
+            <div class="routines-heading">
+              <h1>Select Routine</h1>
+              <p>Pick a routine to start today.</p>
+            </div>
+            <button class="routines-create" type="button" data-nav="new" aria-label="Create routine" title="Create Routine" ${canCreateRoutines() ? "" : "disabled"}>${iconSvg("plus")}</button>
           </div>
           <label class="routine-search">
             ${iconSvg("search")}
@@ -1035,9 +1111,10 @@
   }
 
   function renderRoutineLandingCard(name) {
+    const imageId = routineImageId(name);
     return `
       <button class="routine-card-tile" type="button" data-routine-start="${escapeAttr(name)}">
-        <span class="routine-card-art" aria-hidden="true"></span>
+        <span class="routine-card-art" aria-hidden="true"><img src="${escapeAttr(routineImagePath(imageId))}" alt=""></span>
         <span class="routine-card-copy">
           <strong>${escapeHtml(name)}</strong>
           <small>${escapeHtml(routineSubtitle(name))}</small>
@@ -1055,20 +1132,13 @@
     const completed = historySessions();
     const lastSession = completed[0] || null;
     const lastDate = lastSession ? String(lastSession.completed_at || lastSession.started_at || "").slice(0, 10) : "";
-    const name = homeDisplayName();
-    const recent = homeRecentActivity();
     const topLift = homeTopLift();
     const improved = homeMostImproved();
     return `
       <section class="home-page">
         <div class="home-content">
-          <header class="home-branding">
-            <img class="home-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
-            <div class="home-wordmark"><span>Fit</span><span>Note</span></div>
-            <p>Track progress. Build better.</p>
-          </header>
-
-          <h1 class="home-welcome">Welcome back${name ? `, <span>${escapeHtml(name)}</span>` : ""}</h1>
+          ${renderAppBrandHeader({ userName: true })}
+          <h1 class="home-welcome">Welcome back</h1>
 
           <section class="home-panel snapshot-panel">
             <div class="home-section-heading">
@@ -1094,17 +1164,6 @@
             <span class="home-start-copy"><strong>Start Workout</strong><small>Go to Select Routine / Workout</small></span>
             ${iconSvg("chevronRight")}
           </button>
-
-          <section class="home-panel activity-panel">
-            <div class="home-section-heading home-section-heading-action">
-              <span class="home-section-icon">${iconSvg("clock")}</span>
-              <h2>Recent Activity</h2>
-              <button class="home-see-all" type="button" data-nav="history">See All ${iconSvg("chevronRight")}</button>
-            </div>
-            <div class="activity-list">
-              ${recent.length ? recent.map((item) => `<button class="activity-row" type="button" data-nav="history"><span>${escapeHtml(item.exercise)}</span><strong>${escapeHtml(item.value)}</strong>${iconSvg("chevronRight")}</button>`).join("") : '<p class="home-empty">Complete a workout to see your recent activity.</p>'}
-            </div>
-          </section>
 
           <section class="home-panel highlights-panel">
             <div class="home-section-heading home-section-heading-action">
@@ -1755,6 +1814,20 @@
     render();
   }
 
+  function renderRoutineImagePicker(selectedId) {
+    return routineImageOptions()
+      .map((image) => {
+        const selected = image.id === selectedId;
+        return `
+          <button class="routine-image-choice ${selected ? "selected" : ""}" type="button" data-routine-image="${escapeAttr(image.id)}" aria-pressed="${selected ? "true" : "false"}">
+            <span class="routine-image-thumb"><img src="${escapeAttr(routineImagePath(image.id))}" alt=""></span>
+            <span>${escapeHtml(image.label)}</span>
+          </button>
+        `;
+      })
+      .join("");
+  }
+
   function renderNewRoutinePage() {
     if (!canCreateRoutines()) {
       return `
@@ -1766,9 +1839,17 @@
       `;
     }
     return `
-      <section class="form-page">
-        <p class="section-label">Routine Name</p>
-        <input class="text-input" data-new-routine-name autocomplete="off">
+      <section class="form-page create-routine-page">
+        <div>
+          <p class="section-label">Routine Name</p>
+          <input class="text-input" data-new-routine-name autocomplete="off">
+        </div>
+        <div>
+          <p class="section-label">Routine Image</p>
+          <div class="routine-image-picker" data-routine-image-picker>
+            ${renderRoutineImagePicker(newRoutineImageId)}
+          </div>
+        </div>
         <div class="status" data-status></div>
         <button class="btn btn-primary" type="button" data-action="create-routine">Create Routine</button>
       </section>
@@ -1784,10 +1865,25 @@
     const input = app.querySelector("[data-new-routine-name]");
     const create = app.querySelector("[data-action='create-routine']");
     const status = app.querySelector("[data-status]");
+    app.querySelectorAll("[data-routine-image]").forEach((button) => {
+      button.addEventListener("click", () => {
+        newRoutineImageId = button.dataset.routineImage || "";
+        app.querySelectorAll("[data-routine-image]").forEach((choice) => {
+          const selected = choice.dataset.routineImage === newRoutineImageId;
+          choice.classList.toggle("selected", selected);
+          choice.setAttribute("aria-pressed", selected ? "true" : "false");
+        });
+        status.textContent = "";
+      });
+    });
     const createRoutine = () => {
       const name = input.value.trim();
       if (!name) {
         status.textContent = "Enter a routine name.";
+        return;
+      }
+      if (!workoutHistory.normalizeRoutineImageId(newRoutineImageId)) {
+        status.textContent = "Choose a routine image.";
         return;
       }
       if (state.routines[name]) {
@@ -1795,6 +1891,7 @@
         return;
       }
       state.routines[name] = [{ exercise_id: "", exercise: "", weight: "", reps: "", track_pb: false }];
+      setRoutineImageId(name, newRoutineImageId);
       state.selected_routine = name;
       dataSelection = { kind: "routine", value: name };
       editMode = true;
@@ -1811,6 +1908,12 @@
   }
 
   function renderSettingsPage() {
+    const textSize = currentTextSize();
+    const textSizes = [
+      { id: "small", label: "Small" },
+      { id: "normal", label: "Normal" },
+      { id: "large", label: "Large" },
+    ];
     return `
       <section class="settings-page">
         <section class="settings-section">
@@ -1830,6 +1933,17 @@
             ${cloudFooterStatus()}
           </div>
         </section>
+        <section class="settings-section">
+          <p class="section-label">Text Size</p>
+          <div class="text-size-control" role="group" aria-label="Text size">
+            ${textSizes
+              .map(
+                (item) =>
+                  `<button class="text-size-option ${textSize === item.id ? "active" : ""}" type="button" data-text-size="${escapeAttr(item.id)}" aria-pressed="${textSize === item.id ? "true" : "false"}">${escapeHtml(item.label)}</button>`
+              )
+              .join("")}
+          </div>
+        </section>
         <p class="settings-version">FitNote Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `;
@@ -1837,6 +1951,13 @@
 
   function bindSettingsPage() {
     bindCloudSettings();
+    app.querySelectorAll("[data-text-size]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.settings = { ...(state.settings || {}), text_size: normalizeTextSize(button.dataset.textSize) };
+        saveState();
+        render();
+      });
+    });
   }
 
   function renderHistoryPage() {
@@ -2386,7 +2507,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=58", { updateViaCache: "none" })
+        .register("sw.js?v=60", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

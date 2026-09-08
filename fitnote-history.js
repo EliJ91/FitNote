@@ -237,6 +237,28 @@
     "standing shoulder press": "Standing Barbell Overhead Press",
   };
 
+  const ROUTINE_IMAGE_IDS = [
+    "Abdominals",
+    "Biceps",
+    "Calves",
+    "Chest",
+    "Forearms",
+    "FrontDelts",
+    "FullBack",
+    "FullChest",
+    "FullLegs",
+    "Glutes",
+    "Hamstrings",
+    "Lats",
+    "LowerBack",
+    "Quads",
+    "RearDelts",
+    "Traps",
+    "Triceps",
+  ];
+
+  const TEXT_SIZES = ["small", "normal", "large"];
+
   function exerciseKey(name) {
     return String(name || "")
       .trim()
@@ -253,6 +275,56 @@
 
   function presetExerciseNames() {
     return PRESET_EXERCISE_NAMES.slice().sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  }
+
+  function routineImageIds() {
+    return ROUTINE_IMAGE_IDS.slice();
+  }
+
+  function normalizeRoutineImageId(value) {
+    const text = String(value || "").trim().replace(/\.(png|jpg|jpeg|webp)$/i, "");
+    if (!text) return "";
+    return ROUTINE_IMAGE_IDS.find((id) => id.toLocaleLowerCase() === text.toLocaleLowerCase()) || "";
+  }
+
+  function inferRoutineImageId(name, rows = []) {
+    const nameText = String(name || "").toLocaleLowerCase();
+    if (/\b(abs?|abdominal|core|oblique)\b/.test(nameText)) return "Abdominals";
+    if (/\b(leg|lower|squat|quad|hamstring|glute|calf)\b/.test(nameText)) return "FullLegs";
+    if (/\b(pull|back)\b/.test(nameText)) return "FullBack";
+    if (/\b(push)\b/.test(nameText)) return "FullChest";
+    if (/\b(chest)\b/.test(nameText)) return "Chest";
+    if (/\b(shoulder|delt)\b/.test(nameText)) return "FrontDelts";
+    if (/\b(arm|bicep|curl)\b/.test(nameText)) return "Biceps";
+    if (/\b(tricep)\b/.test(nameText)) return "Triceps";
+    const rowText = rows
+      .map((row) => `${row.exercise || ""} ${row.exercise_name || ""}`)
+      .join(" ")
+      .toLocaleLowerCase();
+    const text = rowText;
+    if (/\b(abs?|abdominal|core|oblique|plank|crunch)\b/.test(text)) return "Abdominals";
+    if (/\b(leg|lower|squat|quad|hamstring|glute|calf|lunge|deadlift|step-up)\b/.test(text)) return "FullLegs";
+    if (/\b(pull|back|row|pulldown|lat|trap)\b/.test(text)) return "FullBack";
+    if (/\b(shoulder|delt|overhead|arnold)\b/.test(text)) return "FrontDelts";
+    if (/\b(arm|bicep|curl)\b/.test(text)) return "Biceps";
+    if (/\b(tricep|pushdown|extension)\b/.test(text)) return "Triceps";
+    if (/\b(chest|push|bench|press|fly|dip)\b/.test(text)) return "Chest";
+    return "FullChest";
+  }
+
+  function routineImageIdFor(name, rows = [], preferred = "") {
+    return normalizeRoutineImageId(preferred) || inferRoutineImageId(name, rows);
+  }
+
+  function normalizeTextSize(value) {
+    const text = String(value || "normal").trim().toLocaleLowerCase();
+    return TEXT_SIZES.includes(text) ? text : "normal";
+  }
+
+  function normalizeSettings(settings) {
+    return {
+      text_size: normalizeTextSize(settings?.text_size || settings?.textSize),
+    };
   }
 
   function isPlaceholderExerciseName(name) {
@@ -528,6 +600,7 @@
     delete data.sets;
     delete data.selected_group;
     delete data.deleted_groups;
+    data.settings = normalizeSettings(data.settings);
 
     data.exercises = (data.exercises || []).map((exercise) => ({
       id: exercise.id,
@@ -542,6 +615,7 @@
       id: routine.id,
       name: routine.name,
       category: routine.category || routine.name || "",
+      image_id: routineImageIdFor(routine.name, routine.exercises || [], routine.image_id),
       exercises: (routine.exercises || [])
         .filter((exercise) => exerciseIds.has(exercise.exercise_id))
         .map((exercise, index) => ({
@@ -677,11 +751,12 @@
     if (existing) {
       existing.name = routineName;
       existing.category = existing.category || routineName;
+      existing.image_id = routineImageIdFor(routineName, rows, existing.image_id);
       existing.exercises = exercises;
       if (existing.active === undefined) existing.active = true;
       return existing.id;
     }
-    data.routine_definitions.push({ id, name: routineName, category: routineName, exercises, active: true });
+    data.routine_definitions.push({ id, name: routineName, category: routineName, image_id: routineImageIdFor(routineName, rows), exercises, active: true });
     return id;
   }
 
@@ -694,6 +769,17 @@
     data.migration_metadata = data.migration_metadata && typeof data.migration_metadata === "object" ? data.migration_metadata : {};
     data.routine_definitions.forEach((routine) => {
       if (!routine || typeof routine !== "object") return;
+      const imageId = normalizeRoutineImageId(routine.image_id || routine.imageId || routine.photo_id || routine.photoId);
+      if (imageId) routine.image_id = imageId;
+      delete routine.image;
+      delete routine.imageId;
+      delete routine.image_url;
+      delete routine.imageUrl;
+      delete routine.image_path;
+      delete routine.imagePath;
+      delete routine.photo;
+      delete routine.photo_id;
+      delete routine.photoId;
       (routine.exercises || []).forEach((exercise) => {
         if (!exercise || typeof exercise !== "object") return;
         delete exercise.weight_offset;
@@ -772,7 +858,7 @@
     normalizeExistingV2(data);
     const previousSourceCounts = data.migration_metadata.source_counts || {};
     data.history_version = HISTORY_SCHEMA_VERSION;
-    delete data.settings;
+    data.settings = normalizeSettings(data.settings);
     data.routines = Object.keys(data.routines || {}).length ? data.routines : routinesFromLegacy(data);
     Object.keys(data.routines).forEach((name) => {
       data.routines[name] = Array.isArray(data.routines[name]) ? data.routines[name].map(normalizeExerciseRow) : [];
@@ -1152,6 +1238,10 @@
     presetExerciseNames,
     presetExerciseId,
     canonicalExerciseName,
+    routineImageIds,
+    routineImageIdFor,
+    normalizeRoutineImageId,
+    normalizeTextSize,
     ensureHistoricalModel,
     startWorkoutSession,
     latestCompletedSession,

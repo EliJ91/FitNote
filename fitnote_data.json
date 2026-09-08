@@ -1,6 +1,6 @@
 {
   "settings": {
-    "always_on_top": true
+    "text_size": "normal"
   },
   "routines": {
     "Push Day": [
@@ -1054,6 +1054,7 @@
       "id": "routine_1klq2mb",
       "name": "Push Day",
       "category": "Push Day",
+      "image_id": "FullChest",
       "exercises": [
         {
           "exercise_id": "ex_95mykc",
@@ -1110,6 +1111,7 @@
       "id": "routine_9gp8tk",
       "name": "Pull Day",
       "category": "Pull Day",
+      "image_id": "FullBack",
       "exercises": [
         {
           "exercise_id": "ex_aolmfn",
@@ -1166,6 +1168,7 @@
       "id": "routine_1fbaify",
       "name": "Legs Day",
       "category": "Legs Day",
+      "image_id": "FullLegs",
       "exercises": [
         {
           "exercise_id": "ex_1jhu8",
@@ -1222,6 +1225,7 @@
       "id": "routine_1o3p751",
       "name": "Imported",
       "category": "Imported",
+      "image_id": "FullLegs",
       "exercises": [
         {
           "exercise_id": "ex_aomnsi",

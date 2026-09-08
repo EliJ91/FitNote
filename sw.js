@@ -1,11 +1,11 @@
-const CACHE_NAME = "fitnote-v58";
+const CACHE_NAME = "fitnote-v60";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=58",
-  "./fitnote-config.js?v=58",
-  "./fitnote-history.js?v=58",
-  "./app.js?v=58",
+  "./styles.css?v=60",
+  "./fitnote-config.js?v=60",
+  "./fitnote-history.js?v=60",
+  "./app.js?v=60",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/fitnote-landing-logo.png",
@@ -13,6 +13,23 @@ const ASSETS = [
   "./icons/fitnote-mark.png",
   "./icons/fitnote-tab-icon.png",
   "./icons/fitnote-app-logo.png",
+  "./assets/routine-images/Abdominals.png",
+  "./assets/routine-images/Biceps.png",
+  "./assets/routine-images/Calves.png",
+  "./assets/routine-images/Chest.png",
+  "./assets/routine-images/Forearms.png",
+  "./assets/routine-images/FrontDelts.png",
+  "./assets/routine-images/FullBack.png",
+  "./assets/routine-images/FullChest.png",
+  "./assets/routine-images/FullLegs.png",
+  "./assets/routine-images/Glutes.png",
+  "./assets/routine-images/Hamstrings.png",
+  "./assets/routine-images/Lats.png",
+  "./assets/routine-images/LowerBack.png",
+  "./assets/routine-images/Quads.png",
+  "./assets/routine-images/RearDelts.png",
+  "./assets/routine-images/Traps.png",
+  "./assets/routine-images/Triceps.png",
 ];
 
 self.addEventListener("install", (event) => {
