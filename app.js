@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.39";
+  const APP_VERSION = "1.3.40";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -15,7 +15,7 @@
   const CLOUD_REQUEST_TIMEOUT_MS = 5000;
 
   const INITIAL_DATA = {
-    settings: { text_size: "normal" },
+    settings: { text_size: "normal", routine_columns: "two" },
     selected_routine: "Pull Day",
     routines: {
       "Push Day": [
@@ -73,7 +73,6 @@
   let currentSessionId = null;
   let currentPage = "home";
   let routinesSearchTerm = "";
-  let routinesCategory = "All";
   let newRoutineImageId = "";
   let editMode = false;
   let editSnapshot = null;
@@ -91,7 +90,6 @@
   };
   let toastTimer = null;
   let confirmResolver = null;
-  let longPressTimer = null;
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
@@ -299,12 +297,20 @@
     return workoutHistory.normalizeTextSize ? workoutHistory.normalizeTextSize(value) : ["small", "large"].includes(value) ? value : "normal";
   }
 
+  function normalizeRoutineColumns(value) {
+    return workoutHistory.normalizeRoutineColumns ? workoutHistory.normalizeRoutineColumns(value) : value === "one" ? "one" : "two";
+  }
+
   function currentTextSize() {
     return normalizeTextSize(state?.settings?.text_size);
   }
 
+  function currentRoutineColumns() {
+    return normalizeRoutineColumns(state?.settings?.routine_columns);
+  }
+
   function applyAppShellClass() {
-    app.className = `app-shell text-size-${currentTextSize()}`;
+    app.className = `app-shell text-size-${currentTextSize()} routine-columns-${currentRoutineColumns()}`;
   }
 
   function normalizeData(input) {
@@ -312,6 +318,7 @@
     const data = workoutHistory.ensureHistoricalModel(source, { today: TODAY });
     data.settings = {
       text_size: normalizeTextSize(data.settings?.text_size || source.settings?.text_size),
+      routine_columns: normalizeRoutineColumns(data.settings?.routine_columns || source.settings?.routine_columns),
     };
     return data;
   }
@@ -921,10 +928,10 @@
   }
 
   function titleForPage(page) {
+    if (page === "routine") return currentRoutine() || "Workout";
     return {
       home: "FitNote",
       routines: "Routines",
-      routine: "Workout",
       new: "New Routine",
       history: "History",
       data: "Data",
@@ -1007,20 +1014,6 @@
     return { exercise: best.exercise, value: `+${formatWeight(best.improvement)} lb` };
   }
 
-  function routineCategoryFor(name) {
-    const text = String(name || "").toLowerCase();
-    if (/core|abs|oblique/.test(text)) return "Core";
-    if (/leg|lower|squat|glute|hamstring|quad|calf/.test(text)) return "Lower Body";
-    if (/push|pull|chest|back|shoulder|arm|upper/.test(text)) return "Upper Body";
-    return "Strength";
-  }
-
-  function routineMatchesCategory(name, category) {
-    if (category === "All") return true;
-    if (category === "Strength") return true;
-    return routineCategoryFor(name) === category;
-  }
-
   function routineSubtitle(name) {
     const known = {
       "push day": "Chest - Shoulders - Triceps",
@@ -1041,38 +1034,29 @@
 
   function routineExerciseCount(name) {
     const count = (state.routines[name] || []).filter((row) => row.exercise && row.active !== false).length;
-    return `${count} exercise${count === 1 ? "" : "s"}`;
-  }
-
-  function daysAgoLabel(date) {
-    if (!date) return "No workouts yet";
-    const today = new Date(`${TODAY}T12:00:00`);
-    const previous = new Date(`${date}T12:00:00`);
-    const days = Math.max(0, Math.floor((today - previous) / 86400000));
-    if (days === 0) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 7) return `Last: ${days} days ago`;
-    const weeks = Math.max(1, Math.round(days / 7));
-    return `Last: ${weeks} week${weeks === 1 ? "" : "s"} ago`;
+    return `${count} ex`;
   }
 
   function routineLastCompletedLabel(name) {
     const session = historySessions().find((item) => item.routine_name === name);
     const date = session ? String(session.completed_at || session.started_at || "").slice(0, 10) : "";
-    return daysAgoLabel(date);
+    if (!date) return "Last: —";
+    const today = new Date(`${TODAY}T12:00:00`);
+    const previous = new Date(`${date}T12:00:00`);
+    const days = Math.max(0, Math.floor((today - previous) / 86400000));
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `Last: ${days}d`;
+    const weeks = Math.max(1, Math.round(days / 7));
+    return `Last: ${weeks}w`;
   }
 
   function filteredRoutineNames() {
     const query = routinesSearchTerm.trim().toLocaleLowerCase();
-    return routineNames().filter((name) => {
-      if (!routineMatchesCategory(name, routinesCategory)) return false;
-      if (!query) return true;
-      return `${name} ${routineSubtitle(name)}`.toLocaleLowerCase().includes(query);
-    });
+    return routineNames().filter((name) => !query || `${name} ${routineSubtitle(name)}`.toLocaleLowerCase().includes(query));
   }
 
   function renderRoutinesPage() {
-    const filters = ["All", "Strength", "Upper Body", "Lower Body", "Core"];
     const routines = filteredRoutineNames();
     return `
       <section class="routines-page">
@@ -1089,14 +1073,6 @@
             ${iconSvg("search")}
             <input type="search" value="${escapeAttr(routinesSearchTerm)}" placeholder="Search routines..." aria-label="Search routines" data-routines-search>
           </label>
-          <div class="routine-filter-row" aria-label="Routine filters">
-            ${filters
-              .map(
-                (filter) =>
-                  `<button class="routine-filter ${routinesCategory === filter ? "active" : ""}" type="button" data-routines-filter="${escapeAttr(filter)}">${escapeHtml(filter)}</button>`
-              )
-              .join("")}
-          </div>
           <div class="routine-card-grid">
             ${
               routines.length
@@ -1217,12 +1193,6 @@
         }
       });
     }
-    app.querySelectorAll("[data-routines-filter]").forEach((button) => {
-      button.addEventListener("click", () => {
-        routinesCategory = button.dataset.routinesFilter || "All";
-        render();
-      });
-    });
     app.querySelectorAll("[data-routine-start]").forEach((button) => {
       button.addEventListener("click", () => {
         const routine = button.dataset.routineStart;
@@ -1270,30 +1240,13 @@
     const session = editMode ? null : currentWorkoutSession();
     return `
       <section class="routine-page">
-        <div>
-          <p class="section-label">Routine</p>
-          <div class="routine-control-row">
-            <div class="routine-selector">
-              <button class="select-like" type="button" data-action="toggle-routine-menu">
-                <span class="select-main">${iconSvg("calendar")}<span>${escapeHtml(currentRoutine())}</span></span>
-                ${iconSvg("chevronDown")}
-              </button>
-              <div class="routine-menu" data-routine-menu hidden>
-                ${routineNames()
-                  .map(
-                    (name) =>
-                      `<button class="routine-option ${name === currentRoutine() ? "active" : ""}" type="button" data-routine="${escapeAttr(name)}">${escapeHtml(name)}</button>`
-                  )
-                  .join("")}
-              </div>
-            </div>
-            <div class="routine-toolbar">
-              <button class="btn btn-secondary routine-tool" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
-              <div class="routine-actions-menu" data-routine-actions-menu hidden>
-                <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
-                <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
-                <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
-              </div>
+        <div class="routine-page-actions">
+          <div class="routine-toolbar">
+            <button class="btn btn-secondary routine-tool" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
+            <div class="routine-actions-menu" data-routine-actions-menu hidden>
+              <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
+              <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
+              <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
             </div>
           </div>
         </div>
@@ -1389,34 +1342,6 @@
   }
 
   function bindRoutinePage() {
-    const routineMenu = app.querySelector("[data-routine-menu]");
-    app.querySelector("[data-action='toggle-routine-menu']").addEventListener("click", () => {
-      routineMenu.hidden = !routineMenu.hidden;
-    });
-    app.querySelectorAll("[data-routine]").forEach((button) => {
-      const selectRoutine = () => {
-        closeEditMode(false);
-        state.selected_routine = button.dataset.routine;
-        currentSessionId = null;
-        currentWorkoutSession();
-        dataSelection = { kind: "routine", value: state.selected_routine };
-        saveState();
-        render();
-      };
-      button.addEventListener("click", selectRoutine);
-      button.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        deleteRoutine(button.dataset.routine);
-      });
-      button.addEventListener("pointerdown", () => {
-        window.clearTimeout(longPressTimer);
-        longPressTimer = window.setTimeout(() => deleteRoutine(button.dataset.routine), 650);
-      });
-      button.addEventListener("pointerup", () => window.clearTimeout(longPressTimer));
-      button.addEventListener("pointerleave", () => window.clearTimeout(longPressTimer));
-      button.addEventListener("pointercancel", () => window.clearTimeout(longPressTimer));
-    });
-
     app.querySelector("[data-action='save-routine']").addEventListener("click", saveRoutineButton);
     app.querySelector("[data-action='toggle-routine-actions']").addEventListener("click", (event) => {
       event.stopPropagation();
@@ -1909,10 +1834,15 @@
 
   function renderSettingsPage() {
     const textSize = currentTextSize();
+    const routineColumns = currentRoutineColumns();
     const textSizes = [
       { id: "small", label: "Small" },
       { id: "normal", label: "Normal" },
       { id: "large", label: "Large" },
+    ];
+    const routineColumnOptions = [
+      { id: "two", label: "2 Columns" },
+      { id: "one", label: "1 Column" },
     ];
     return `
       <section class="settings-page">
@@ -1944,6 +1874,17 @@
               .join("")}
           </div>
         </section>
+        <section class="settings-section">
+          <p class="section-label">Routine Layout</p>
+          <div class="text-size-control routine-layout-control" role="group" aria-label="Routine layout">
+            ${routineColumnOptions
+              .map(
+                (item) =>
+                  `<button class="text-size-option ${routineColumns === item.id ? "active" : ""}" type="button" data-routine-columns="${escapeAttr(item.id)}" aria-pressed="${routineColumns === item.id ? "true" : "false"}">${escapeHtml(item.label)}</button>`
+              )
+              .join("")}
+          </div>
+        </section>
         <p class="settings-version">FitNote Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `;
@@ -1954,6 +1895,16 @@
     app.querySelectorAll("[data-text-size]").forEach((button) => {
       button.addEventListener("click", () => {
         state.settings = { ...(state.settings || {}), text_size: normalizeTextSize(button.dataset.textSize) };
+        saveState();
+        render();
+      });
+    });
+    app.querySelectorAll("[data-routine-columns]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.settings = {
+          ...(state.settings || {}),
+          routine_columns: normalizeRoutineColumns(button.dataset.routineColumns),
+        };
         saveState();
         render();
       });
@@ -2485,9 +2436,7 @@
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
     }
-    if (!event.target.closest(".routine-selector")) {
-      const routineMenu = app.querySelector("[data-routine-menu]");
-      if (routineMenu) routineMenu.hidden = true;
+    if (!event.target.closest(".routine-toolbar")) {
       const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
       if (routineActionsMenu) routineActionsMenu.hidden = true;
     }
@@ -2499,15 +2448,13 @@
       if (!backdrop.hidden) document.getElementById("confirm-cancel").click();
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
-      const routineMenu = app.querySelector("[data-routine-menu]");
-      if (routineMenu) routineMenu.hidden = true;
     }
   });
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=61", { updateViaCache: "none" })
+        .register("sw.js?v=62", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

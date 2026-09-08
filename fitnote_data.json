@@ -1,6 +1,7 @@
 {
   "settings": {
-    "text_size": "normal"
+    "text_size": "normal",
+    "routine_columns": "two"
   },
   "routines": {
     "Push Day": [

@@ -258,6 +258,7 @@
   ];
 
   const TEXT_SIZES = ["small", "normal", "large"];
+  const ROUTINE_COLUMN_OPTIONS = ["one", "two"];
 
   function exerciseKey(name) {
     return String(name || "")
@@ -321,9 +322,15 @@
     return TEXT_SIZES.includes(text) ? text : "normal";
   }
 
+  function normalizeRoutineColumns(value) {
+    const text = String(value || "two").trim().toLocaleLowerCase();
+    return ROUTINE_COLUMN_OPTIONS.includes(text) ? text : "two";
+  }
+
   function normalizeSettings(settings) {
     return {
       text_size: normalizeTextSize(settings?.text_size || settings?.textSize),
+      routine_columns: normalizeRoutineColumns(settings?.routine_columns || settings?.routineColumns),
     };
   }
 
@@ -1242,6 +1249,7 @@
     routineImageIdFor,
     normalizeRoutineImageId,
     normalizeTextSize,
+    normalizeRoutineColumns,
     ensureHistoricalModel,
     startWorkoutSession,
     latestCompletedSession,
