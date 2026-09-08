@@ -8,34 +8,10 @@
   "description": "A mobile-friendly fitness log and routine tracker.",
   "icons": [
     {
-      "src": "icons/fitnote-tab-icon.png",
-      "sizes": "155x155",
+      "src": "icons/fitnote-app-logo.png",
+      "sizes": "1254x1254",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "icons/fitnote-landing-logo.png",
-      "sizes": "878x765",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/fitnote-full-logo.png",
-      "sizes": "878x765",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/fitnote-mark.png",
-      "sizes": "440x225",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "icons/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
     }
   ]
 }

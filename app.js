@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.28";
+  const APP_VERSION = "1.3.29";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
@@ -733,7 +733,7 @@
       <section class="screen">
         <header class="topbar">
           <div class="brand-lockup">
-            <img class="brand-mark" src="icons/fitnote-mark.png" alt="">
+            <img class="brand-mark" src="icons/fitnote-app-logo.png" alt="">
             <h1>${escapeHtml(title)}</h1>
           </div>
           <button class="hamburger" type="button" data-action="toggle-menu" aria-label="Menu"><span></span></button>
@@ -2033,7 +2033,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=49", { updateViaCache: "none" })
+        .register("sw.js?v=50", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

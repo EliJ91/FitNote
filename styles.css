@@ -101,14 +101,14 @@ button.is-pressing:not([disabled]) {
 }
 
 .brand-mark {
-  width: 58px;
-  height: 36px;
+  width: 46px;
+  height: 46px;
   flex: 0 0 auto;
-  border-radius: 7px;
+  border-radius: 50%;
   background: transparent;
   object-fit: contain;
   padding: 0;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.36);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
 }
 
 .topbar h1 {
