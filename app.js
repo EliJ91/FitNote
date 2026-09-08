@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.32";
+  const APP_VERSION = "1.3.33";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const LEGACY_SUPABASE_TABLE = "fitnote_data";
@@ -542,10 +542,12 @@
         cloudLoadActive = true;
       }
     } catch (error) {
+      console.error("FitNote cloud load failed", error);
       cloudStatus = isDatabaseFullError(error) ? "Database full" : "Cloud sync failed";
       if (isDatabaseFullError(error)) cloudDatabaseFull = true;
       if (/failed to fetch|network|timed out|abort/i.test(String(error?.message || error))) markCloudUnavailable();
-      showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : "Cloud data unavailable.");
+      const detail = error?.code || error?.status || error?.message || "unknown error";
+      showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : `Cloud data unavailable: ${detail}`);
     } finally {
       cloudLoadActive = false;
       render();
@@ -2239,7 +2241,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=53", { updateViaCache: "none" })
+        .register("sw.js?v=54", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
