@@ -244,13 +244,13 @@
     "Chest",
     "Forearms",
     "FrontDelts",
-    "FullBack",
-    "FullChest",
     "FullLegs",
     "Glutes",
     "Hamstrings",
     "Lats",
     "LowerBack",
+    "Pull",
+    "Push",
     "Quads",
     "RearDelts",
     "Traps",
@@ -285,15 +285,20 @@
   function normalizeRoutineImageId(value) {
     const text = String(value || "").trim().replace(/\.(png|jpg|jpeg|webp)$/i, "");
     if (!text) return "";
-    return ROUTINE_IMAGE_IDS.find((id) => id.toLocaleLowerCase() === text.toLocaleLowerCase()) || "";
+    const exact = ROUTINE_IMAGE_IDS.find((id) => id.toLocaleLowerCase() === text.toLocaleLowerCase());
+    if (exact) return exact;
+    const key = text.toLocaleLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (key === "fullback") return "Pull";
+    if (key === "fullchest") return "Push";
+    return "";
   }
 
   function inferRoutineImageId(name, rows = []) {
     const nameText = String(name || "").toLocaleLowerCase();
     if (/\b(abs?|abdominal|core|oblique)\b/.test(nameText)) return "Abdominals";
     if (/\b(leg|lower|squat|quad|hamstring|glute|calf)\b/.test(nameText)) return "FullLegs";
-    if (/\b(pull|back)\b/.test(nameText)) return "FullBack";
-    if (/\b(push)\b/.test(nameText)) return "FullChest";
+    if (/\b(pull|back)\b/.test(nameText)) return "Pull";
+    if (/\b(push)\b/.test(nameText)) return "Push";
     if (/\b(chest)\b/.test(nameText)) return "Chest";
     if (/\b(shoulder|delt)\b/.test(nameText)) return "FrontDelts";
     if (/\b(arm|bicep|curl)\b/.test(nameText)) return "Biceps";
@@ -305,12 +310,12 @@
     const text = rowText;
     if (/\b(abs?|abdominal|core|oblique|plank|crunch)\b/.test(text)) return "Abdominals";
     if (/\b(leg|lower|squat|quad|hamstring|glute|calf|lunge|deadlift|step-up)\b/.test(text)) return "FullLegs";
-    if (/\b(pull|back|row|pulldown|lat|trap)\b/.test(text)) return "FullBack";
+    if (/\b(pull|back|row|pulldown|lat|trap)\b/.test(text)) return "Pull";
     if (/\b(shoulder|delt|overhead|arnold)\b/.test(text)) return "FrontDelts";
     if (/\b(arm|bicep|curl)\b/.test(text)) return "Biceps";
     if (/\b(tricep|pushdown|extension)\b/.test(text)) return "Triceps";
     if (/\b(chest|push|bench|press|fly|dip)\b/.test(text)) return "Chest";
-    return "FullChest";
+    return "Push";
   }
 
   function routineImageIdFor(name, rows = [], preferred = "") {

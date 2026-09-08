@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.40";
+  const APP_VERSION = "1.3.41";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -50,13 +50,13 @@
     Chest: "Chest",
     Forearms: "Forearms",
     FrontDelts: "Front Delts",
-    FullBack: "Full Back",
-    FullChest: "Full Chest",
     FullLegs: "Full Legs",
     Glutes: "Glutes",
     Hamstrings: "Hamstrings",
     Lats: "Lats",
     LowerBack: "Lower Back",
+    Pull: "Pull",
+    Push: "Push",
     Quads: "Quads",
     RearDelts: "Rear Delts",
     Traps: "Traps",
@@ -73,7 +73,9 @@
   let currentSessionId = null;
   let currentPage = "home";
   let routinesSearchTerm = "";
+  let newRoutineNameDraft = "";
   let newRoutineImageId = "";
+  let newRoutineImagePickerOpen = false;
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -784,7 +786,11 @@
       showToast("Sign in with Google to create routines.");
       return;
     }
-    if (page === "new") newRoutineImageId = "";
+    if (page === "new") {
+      newRoutineNameDraft = "";
+      newRoutineImageId = "";
+      newRoutineImagePickerOpen = false;
+    }
     currentPage = page;
     if (page !== "routine") closeEditMode(false);
     selectedHistory = new Set();
@@ -1740,9 +1746,10 @@
   }
 
   function renderRoutineImagePicker(selectedId) {
+    const normalizedSelectedId = workoutHistory.normalizeRoutineImageId(selectedId);
     return routineImageOptions()
       .map((image) => {
-        const selected = image.id === selectedId;
+        const selected = image.id === normalizedSelectedId;
         return `
           <button class="routine-image-choice ${selected ? "selected" : ""}" type="button" data-routine-image="${escapeAttr(image.id)}" aria-pressed="${selected ? "true" : "false"}">
             <span class="routine-image-thumb"><img src="${escapeAttr(routineImagePath(image.id))}" alt=""></span>
@@ -1751,6 +1758,40 @@
         `;
       })
       .join("");
+  }
+
+  function renderSelectedRoutineImageButton() {
+    const selectedId = workoutHistory.normalizeRoutineImageId(newRoutineImageId);
+    const selected = selectedId ? routineImageById(selectedId) : null;
+    return `
+      <button class="routine-image-select ${selected ? "has-selection" : ""}" type="button" data-action="open-routine-image-picker" aria-label="Choose routine image">
+        ${
+          selected
+            ? `<span class="routine-image-selected-thumb"><img src="${escapeAttr(routineImagePath(selected.id))}" alt=""></span>
+               <span class="routine-image-selected-copy"><strong>${escapeHtml(selected.label)}</strong><small>Change image</small></span>`
+            : `<span class="routine-image-selected-thumb empty">${iconSvg("plus")}</span>
+               <span class="routine-image-selected-copy"><strong>Choose Image</strong><small>Select from routine images</small></span>`
+        }
+        ${iconSvg("chevronRight")}
+      </button>
+    `;
+  }
+
+  function renderRoutineImageDialog() {
+    if (!newRoutineImagePickerOpen) return "";
+    return `
+      <div class="routine-image-backdrop" data-routine-image-backdrop>
+        <section class="routine-image-dialog" role="dialog" aria-modal="true" aria-label="Choose routine image">
+          <div class="routine-image-dialog-header">
+            <h2>Choose Routine Image</h2>
+            <button class="icon-btn card-icon-btn" type="button" data-action="close-routine-image-picker" aria-label="Close image picker" title="Close">${iconSvg("cancel")}</button>
+          </div>
+          <div class="routine-image-picker in-dialog" data-routine-image-picker>
+            ${renderRoutineImagePicker(newRoutineImageId)}
+          </div>
+        </section>
+      </div>
+    `;
   }
 
   function renderNewRoutinePage() {
@@ -1767,16 +1808,15 @@
       <section class="form-page create-routine-page">
         <div>
           <p class="section-label">Routine Name</p>
-          <input class="text-input" data-new-routine-name autocomplete="off">
+          <input class="text-input" data-new-routine-name autocomplete="off" value="${escapeAttr(newRoutineNameDraft)}">
         </div>
-        <div>
+        <div class="routine-image-field">
           <p class="section-label">Routine Image</p>
-          <div class="routine-image-picker" data-routine-image-picker>
-            ${renderRoutineImagePicker(newRoutineImageId)}
-          </div>
+          ${renderSelectedRoutineImageButton()}
         </div>
         <div class="status" data-status></div>
         <button class="btn btn-primary" type="button" data-action="create-routine">Create Routine</button>
+        ${renderRoutineImageDialog()}
       </section>
     `;
   }
@@ -1790,15 +1830,33 @@
     const input = app.querySelector("[data-new-routine-name]");
     const create = app.querySelector("[data-action='create-routine']");
     const status = app.querySelector("[data-status]");
+    const openImagePicker = app.querySelector("[data-action='open-routine-image-picker']");
+    if (openImagePicker) {
+      openImagePicker.addEventListener("click", () => {
+        newRoutineNameDraft = input.value;
+        newRoutineImagePickerOpen = true;
+        render();
+      });
+    }
+    const closeImagePicker = () => {
+      newRoutineNameDraft = input.value;
+      newRoutineImagePickerOpen = false;
+      render();
+    };
+    const backdrop = app.querySelector("[data-routine-image-backdrop]");
+    if (backdrop) {
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) closeImagePicker();
+      });
+    }
+    const closeButton = app.querySelector("[data-action='close-routine-image-picker']");
+    if (closeButton) closeButton.addEventListener("click", closeImagePicker);
     app.querySelectorAll("[data-routine-image]").forEach((button) => {
       button.addEventListener("click", () => {
+        newRoutineNameDraft = input.value;
         newRoutineImageId = button.dataset.routineImage || "";
-        app.querySelectorAll("[data-routine-image]").forEach((choice) => {
-          const selected = choice.dataset.routineImage === newRoutineImageId;
-          choice.classList.toggle("selected", selected);
-          choice.setAttribute("aria-pressed", selected ? "true" : "false");
-        });
-        status.textContent = "";
+        newRoutineImagePickerOpen = false;
+        render();
       });
     });
     const createRoutine = () => {
@@ -1819,6 +1877,8 @@
       setRoutineImageId(name, newRoutineImageId);
       state.selected_routine = name;
       dataSelection = { kind: "routine", value: name };
+      newRoutineNameDraft = "";
+      newRoutineImagePickerOpen = false;
       editMode = true;
       editSnapshot = clone(state.routines[name]);
       saveState();
@@ -1826,10 +1886,12 @@
       render();
     };
     create.addEventListener("click", createRoutine);
+    input.addEventListener("input", () => {
+      newRoutineNameDraft = input.value;
+    });
     input.addEventListener("keydown", (event) => {
       if (event.key === "Enter") createRoutine();
     });
-    input.focus();
   }
 
   function renderSettingsPage() {
@@ -2446,6 +2508,10 @@
     if (event.key === "Escape") {
       const backdrop = document.getElementById("confirm-backdrop");
       if (!backdrop.hidden) document.getElementById("confirm-cancel").click();
+      if (newRoutineImagePickerOpen) {
+        newRoutineImagePickerOpen = false;
+        render();
+      }
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
     }
@@ -2454,7 +2520,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=62", { updateViaCache: "none" })
+        .register("sw.js?v=63", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

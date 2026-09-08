@@ -1055,7 +1055,7 @@
       "id": "routine_1klq2mb",
       "name": "Push Day",
       "category": "Push Day",
-      "image_id": "FullChest",
+      "image_id": "Push",
       "exercises": [
         {
           "exercise_id": "ex_95mykc",
@@ -1112,7 +1112,7 @@
       "id": "routine_9gp8tk",
       "name": "Pull Day",
       "category": "Pull Day",
-      "image_id": "FullBack",
+      "image_id": "Pull",
       "exercises": [
         {
           "exercise_id": "ex_aolmfn",
