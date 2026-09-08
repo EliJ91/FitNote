@@ -80,9 +80,14 @@ button.is-pressing:not([disabled]) {
   min-height: 0;
   padding: max(28px, env(safe-area-inset-top)) 22px max(18px, env(safe-area-inset-bottom));
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 18px;
   overflow: hidden;
+}
+
+.screen > .home-nav {
+  width: calc(100% + 44px);
+  margin: 0 -22px -18px;
 }
 
 .topbar {
@@ -124,19 +129,6 @@ button.is-pressing:not([disabled]) {
   overflow-wrap: anywhere;
 }
 
-.hamburger {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--text);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -150,31 +142,10 @@ button.is-pressing:not([disabled]) {
   cursor: pointer;
 }
 
-.hamburger span,
-.hamburger::before,
-.hamburger::after {
-  content: "";
-  width: 19px;
-  height: 2px;
-  border-radius: 999px;
-  background: currentColor;
-  display: block;
-}
-
-.hamburger {
-  gap: 4px;
-}
-
-.hamburger:hover,
 .icon-btn:hover,
 .icon-btn:focus-visible {
   border-color: var(--line-bright);
   outline: 0;
-}
-
-.hamburger:focus-visible {
-  outline: 2px solid rgba(34, 199, 109, 0.42);
-  outline-offset: 2px;
 }
 
 .icon {
@@ -187,20 +158,6 @@ button.is-pressing:not([disabled]) {
   stroke-linejoin: round;
 }
 
-.app-menu {
-  position: fixed;
-  z-index: 40;
-  top: 76px;
-  right: max(18px, calc((100vw - 430px) / 2 + 22px));
-  min-width: 210px;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #070c0a;
-  box-shadow: 0 18px 38px rgba(0, 0, 0, 0.45);
-}
-
-.app-menu[hidden],
 .routine-menu[hidden],
 .data-menu[hidden],
 .exercise-menu[hidden],
@@ -243,12 +200,6 @@ button.is-pressing:not([disabled]) {
   font-size: 0.76rem;
   line-height: 1.35;
   white-space: normal;
-}
-
-.menu-separator {
-  height: 1px;
-  margin: 6px 0;
-  background: var(--line-soft);
 }
 
 .page-body {
@@ -1371,7 +1322,68 @@ button.is-pressing:not([disabled]) {
 }
 
 .settings-page {
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto auto 1fr;
+  overflow: auto;
+  padding-bottom: 4px;
+}
+
+.settings-section {
+  display: grid;
+  gap: 8px;
+}
+
+.settings-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.settings-action {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(22, 36, 31, 0.96), rgba(10, 18, 15, 0.96));
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-action:hover,
+.settings-action:focus-visible {
+  border-color: var(--line-bright);
+  outline: 0;
+}
+
+.settings-action .icon {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.settings-account {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(8, 16, 13, 0.72);
+}
+
+.settings-account .menu-item {
+  padding: 4px 0;
+}
+
+.settings-version {
+  align-self: end;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-align: center;
 }
 
 .history-page {
@@ -1605,6 +1617,12 @@ tr.selected td {
   .screen {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .screen > .home-nav {
+    width: calc(100% + 28px);
+    margin-left: -14px;
+    margin-right: -14px;
   }
 
   .home-content {

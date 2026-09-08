@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.33";
+  const APP_VERSION = "1.3.34";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const LEGACY_SUPABASE_TABLE = "fitnote_data";
@@ -750,22 +750,9 @@
             <img class="brand-mark" src="icons/fitnote-app-logo.png" alt="">
             <h1>${escapeHtml(title)}</h1>
           </div>
-          <button class="hamburger" type="button" data-action="toggle-menu" aria-label="Menu"><span></span></button>
         </header>
-        <nav class="app-menu" data-menu hidden>
-          <button class="menu-item" type="button" data-nav="home">Home</button>
-          <button class="menu-item" type="button" data-nav="routine">Workout</button>
-          <div class="menu-separator"></div>
-          <button class="menu-item" type="button" data-nav="history">History</button>
-          <button class="menu-item" type="button" data-nav="data">Data</button>
-          <button class="menu-item" type="button" data-nav="settings">Settings</button>
-          <div class="menu-separator"></div>
-          ${cloudMenu()}
-          <div class="menu-separator"></div>
-          <button class="menu-item" type="button" disabled>Version ${escapeHtml(APP_VERSION)}</button>
-          ${cloudFooterStatus()}
-        </nav>
         <main class="page-body">${body}</main>
+        ${renderBottomNav(currentPage)}
       </section>
     `;
   }
@@ -1017,13 +1004,20 @@
             </div>
           </section>
         </div>
-        <nav class="home-nav" aria-label="Primary navigation">
-          <button class="home-nav-item active" type="button" data-nav="home" aria-current="page">${iconSvg("home")}<span>Home</span></button>
-          <button class="home-nav-item" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
-          <button class="home-nav-item" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
-          <button class="home-nav-item" type="button" data-nav="settings">${iconSvg("settings")}<span>Settings</span></button>
-        </nav>
+        ${renderBottomNav("home")}
       </section>
+    `;
+  }
+
+  function renderBottomNav(activePage) {
+    const active = activePage === "new" ? "routine" : activePage;
+    return `
+      <nav class="home-nav" aria-label="Primary navigation">
+        <button class="home-nav-item ${active === "home" ? "active" : ""}" type="button" data-nav="home" ${active === "home" ? 'aria-current="page"' : ""}>${iconSvg("home")}<span>Home</span></button>
+        <button class="home-nav-item ${active === "history" ? "active" : ""}" type="button" data-nav="history" ${active === "history" ? 'aria-current="page"' : ""}>${iconSvg("history")}<span>History</span></button>
+        <button class="home-nav-item ${active === "data" ? "active" : ""}" type="button" data-nav="data" ${active === "data" ? 'aria-current="page"' : ""}>${iconSvg("bars")}<span>Progress</span></button>
+        <button class="home-nav-item ${active === "settings" ? "active" : ""}" type="button" data-nav="settings" ${active === "settings" ? 'aria-current="page"' : ""}>${iconSvg("settings")}<span>Settings</span></button>
+      </nav>
     `;
   }
 
@@ -1034,13 +1028,12 @@
   }
 
   function bindShell() {
-    const menu = app.querySelector("[data-menu]");
-    app.querySelector("[data-action='toggle-menu']").addEventListener("click", () => {
-      menu.hidden = !menu.hidden;
-    });
     app.querySelectorAll("[data-nav]").forEach((button) => {
       button.addEventListener("click", () => setPage(button.dataset.nav));
     });
+  }
+
+  function bindCloudSettings() {
     const signIn = app.querySelector("[data-action='sign-in-google']");
     if (signIn) signIn.addEventListener("click", signInWithGoogle);
     const guestSignIn = app.querySelector("[data-action='guest-sign-in']");
@@ -1671,15 +1664,36 @@
   function renderSettingsPage() {
     return `
       <section class="settings-page">
-        <label class="checkbox-row">
-          <button class="switch ${state.settings.always_on_top ? "on" : ""}" type="button" data-action="toggle-top"></button>
-          <span>Always On Top</span>
-        </label>
+        <section class="settings-section">
+          <p class="section-label">Navigate</p>
+          <div class="settings-actions">
+            <button class="settings-action" type="button" data-nav="home">${iconSvg("home")}<span>Home</span></button>
+            <button class="settings-action" type="button" data-nav="routine">${iconSvg("play")}<span>Workout</span></button>
+            <button class="settings-action" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
+            <button class="settings-action" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
+          </div>
+        </section>
+        <section class="settings-section">
+          <p class="section-label">Account &amp; Sync</p>
+          <div class="settings-account">
+            ${cloudMenu()}
+            ${cloudFooterStatus()}
+          </div>
+        </section>
+        <section class="settings-section">
+          <p class="section-label">Preferences</p>
+          <label class="checkbox-row">
+            <button class="switch ${state.settings.always_on_top ? "on" : ""}" type="button" data-action="toggle-top"></button>
+            <span>Always On Top</span>
+          </label>
+        </section>
+        <p class="settings-version">FitNote Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `;
   }
 
   function bindSettingsPage() {
+    bindCloudSettings();
     app.querySelector("[data-action='toggle-top']").addEventListener("click", () => {
       state.settings.always_on_top = !state.settings.always_on_top;
       saveState();
@@ -2208,10 +2222,6 @@
   }
 
   document.addEventListener("click", (event) => {
-    if (!event.target.closest("[data-menu]") && !event.target.closest("[data-action='toggle-menu']")) {
-      const menu = app.querySelector("[data-menu]");
-      if (menu) menu.hidden = true;
-    }
     if (!event.target.closest(".data-selector")) {
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
@@ -2228,8 +2238,6 @@
     if (event.key === "Escape") {
       const backdrop = document.getElementById("confirm-backdrop");
       if (!backdrop.hidden) document.getElementById("confirm-cancel").click();
-      const menu = app.querySelector("[data-menu]");
-      if (menu) menu.hidden = true;
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
       const routineMenu = app.querySelector("[data-routine-menu]");
@@ -2240,7 +2248,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=55", { updateViaCache: "none" })
+        .register("sw.js?v=56", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
