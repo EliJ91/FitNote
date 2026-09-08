@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.29";
+  const APP_VERSION = "1.3.30";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = ["workout", "planner", "data"].join("_");
@@ -51,7 +51,7 @@
   let authSession = null;
   let state = loadState();
   let currentSessionId = null;
-  let currentPage = "routine";
+  let currentPage = "home";
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -222,6 +222,18 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>',
       user:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"></circle><path d="M5 21v-2a7 7 0 0 1 14 0v2"></path></svg>',
+      bars:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11"></path><path d="M12 19V5"></path><path d="M19 19V8"></path></svg>',
+      clock:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>',
+      home:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>',
+      history:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path><path d="M3 12H1"></path><path d="m4 7-1-1"></path></svg>',
+      settings:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="m4.22 4.22 1.42 1.42"></path><path d="m18.36 18.36 1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="m4.22 19.78 1.42-1.42"></path><path d="m18.36 5.64 1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>',
+      play:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7z" fill="currentColor" stroke="none"></path></svg>',
     };
     return icons[name] || "";
   }
@@ -390,7 +402,7 @@
     localStorage.removeItem(LEGACY_GUEST_MODE_KEY);
     cloudStatus = "Browser storage only";
     applyLoadedState(loadState(STORAGE_KEY));
-    currentPage = "routine";
+    currentPage = "home";
     render();
     showToast("Guest mode saves to this browser only.");
   }
@@ -739,7 +751,8 @@
           <button class="hamburger" type="button" data-action="toggle-menu" aria-label="Menu"><span></span></button>
         </header>
         <nav class="app-menu" data-menu hidden>
-          <button class="menu-item" type="button" data-nav="routine">Home</button>
+          <button class="menu-item" type="button" data-nav="home">Home</button>
+          <button class="menu-item" type="button" data-nav="routine">Workout</button>
           <div class="menu-separator"></div>
           <button class="menu-item" type="button" data-nav="history">History</button>
           <button class="menu-item" type="button" data-nav="data">Data</button>
@@ -792,6 +805,11 @@
       bindAuthGate();
       return;
     }
+    if (currentPage === "home") {
+      app.innerHTML = renderHomePage();
+      bindHomePage();
+      return;
+    }
     const title = currentPage === "routine" ? "FitNote" : titleForPage(currentPage);
     app.innerHTML = shell(title, bodyForPage(currentPage));
     bindShell();
@@ -811,6 +829,7 @@
 
   function titleForPage(page) {
     return {
+      home: "FitNote",
       new: "New Routine",
       history: "History",
       data: "Data",
@@ -819,11 +838,197 @@
   }
 
   function bodyForPage(page) {
+    if (page === "home") return renderHomePage();
     if (page === "new") return renderNewRoutinePage();
     if (page === "history") return renderHistoryPage();
     if (page === "data") return renderDataPage();
     if (page === "settings") return renderSettingsPage();
     return renderRoutinePage();
+  }
+
+  function homeDisplayName() {
+    const metadata = authSession?.user?.user_metadata || {};
+    const name = metadata.first_name || metadata.given_name || metadata.full_name || "";
+    if (name) return String(name).trim().split(/\s+/)[0];
+    const email = authSession?.user?.email || "";
+    return email ? email.split("@")[0] : "";
+  }
+
+  function homeDateLabel(date) {
+    if (!date) return "";
+    const parsed = new Date(`${date}T12:00:00`);
+    return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }
+
+  function homeDaysSince(date) {
+    if (!date) return "No workouts yet";
+    const today = new Date(`${TODAY}T12:00:00`);
+    const previous = new Date(`${date}T12:00:00`);
+    const days = Math.max(0, Math.floor((today - previous) / 86400000));
+    if (days === 0) return "Today";
+    if (days === 1) return "1 Day";
+    return `${days} Days`;
+  }
+
+  function homeSuggestedRoutine(lastSession) {
+    const routines = routineNames();
+    if (!routines.length) return "Create a routine";
+    if (!lastSession) return currentRoutine();
+    const lastIndex = routines.indexOf(lastSession.routine_name);
+    return routines[(lastIndex + 1 + routines.length) % routines.length] || currentRoutine();
+  }
+
+  function homeRecentActivity() {
+    const session = historySessions()[0];
+    if (!session) return [];
+    return workoutHistory
+      .sessionRows(state, session.id)
+      .map((row) => {
+        const completed = row.sets.filter((set) => boolFromData(set.completed));
+        const usable = completed.length ? completed : row.sets;
+        const best = usable
+          .slice()
+          .sort((a, b) => (Number(b.weight) || 0) - (Number(a.weight) || 0))[0];
+        if (!best || (!String(best.weight || "").trim() && !String(best.reps || "").trim())) return null;
+        return {
+          exercise: row.exercise,
+          value: `${formatWeight(best.weight) || "Bodyweight"} x ${best.reps || "-"}`,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 3);
+  }
+
+  function homeWorkoutCountThisWeek() {
+    return historySessions().filter((session) => {
+      const date = String(session.completed_at || session.started_at || "").slice(0, 10);
+      if (!date) return false;
+      const today = new Date(`${TODAY}T12:00:00`);
+      const completed = new Date(`${date}T12:00:00`);
+      const days = Math.floor((today - completed) / 86400000);
+      return days >= 0 && days < 7;
+    }).length;
+  }
+
+  function homeTopLift() {
+    const session = historySessions()[0];
+    if (!session) return { exercise: "No lift data", weight: "-" };
+    const points = workoutHistory
+      .sessionRows(state, session.id)
+      .flatMap((row) => row.sets.filter((set) => boolFromData(set.completed)).map((set) => ({ exercise: row.exercise, weight: Number(set.weight) || 0 })));
+    const point = points.sort((a, b) => b.weight - a.weight)[0];
+    return point ? { exercise: point.exercise, weight: `${formatWeight(point.weight)} lb` } : { exercise: "No lift data", weight: "-" };
+  }
+
+  function homeMostImproved() {
+    const byExercise = new Map();
+    historySessions().forEach((session) => {
+      const date = String(session.completed_at || session.started_at || "").slice(0, 10);
+      workoutHistory.sessionRows(state, session.id).forEach((row) => {
+        const weights = row.sets.filter((set) => boolFromData(set.completed)).map((set) => Number(set.weight) || 0).filter((weight) => weight > 0);
+        if (!weights.length) return;
+        const history = byExercise.get(row.exercise) || [];
+        if (!history.some((item) => item.date === date)) history.push({ date, weight: Math.max(...weights) });
+        byExercise.set(row.exercise, history);
+      });
+    });
+    let best = null;
+    byExercise.forEach((history, exercise) => {
+      if (history.length < 2) return;
+      const improvement = history[0].weight - history[1].weight;
+      if (!best || improvement > best.improvement) best = { exercise, improvement };
+    });
+    if (!best || best.improvement <= 0) return { exercise: "Keep building", value: "Log another workout" };
+    return { exercise: best.exercise, value: `+${formatWeight(best.improvement)} lb` };
+  }
+
+  function renderHomePage() {
+    const completed = historySessions();
+    const lastSession = completed[0] || null;
+    const lastDate = lastSession ? String(lastSession.completed_at || lastSession.started_at || "").slice(0, 10) : "";
+    const name = homeDisplayName();
+    const recent = homeRecentActivity();
+    const topLift = homeTopLift();
+    const improved = homeMostImproved();
+    return `
+      <section class="home-page">
+        <div class="home-content">
+          <header class="home-branding">
+            <img class="home-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
+            <div class="home-wordmark"><span>Fit</span><span>Note</span></div>
+            <p>Track progress. Build better.</p>
+          </header>
+
+          <h1 class="home-welcome">Welcome back${name ? `, <span>${escapeHtml(name)}</span>` : ""}</h1>
+
+          <section class="home-panel snapshot-panel">
+            <div class="home-section-heading">
+              <span class="home-section-icon">${iconSvg("bars")}</span>
+              <h2>Today's Snapshot</h2>
+            </div>
+            <div class="snapshot-grid">
+              <div class="snapshot-item">
+                <span>Last Workout</span>
+                <strong>${escapeHtml(lastSession?.routine_name || "No workouts yet")}</strong>
+                <small>${lastDate ? `Completed: ${escapeHtml(homeDateLabel(lastDate))}` : "Start your first workout"}</small>
+              </div>
+              <div class="snapshot-item">
+                <span>Next Suggested</span>
+                <strong>${escapeHtml(homeSuggestedRoutine(lastSession))}</strong>
+                <small>${lastSession ? "Keep your rotation moving" : "Ready when you are"}</small>
+              </div>
+              <div class="snapshot-item">
+                <span>Since Last Workout</span>
+                <strong>${escapeHtml(homeDaysSince(lastDate))}</strong>
+                <small>${lastDate ? "Keep the momentum" : "Your history starts here"}</small>
+              </div>
+            </div>
+          </section>
+
+          <button class="home-start" type="button" data-nav="routine">
+            <span class="home-start-icon">${iconSvg("play")}</span>
+            <span class="home-start-copy"><strong>Start Workout</strong><small>Go to Select Routine / Workout</small></span>
+            ${iconSvg("chevronRight")}
+          </button>
+
+          <section class="home-panel activity-panel">
+            <div class="home-section-heading home-section-heading-action">
+              <span class="home-section-icon">${iconSvg("clock")}</span>
+              <h2>Recent Activity</h2>
+              <button class="home-see-all" type="button" data-nav="history">See All ${iconSvg("chevronRight")}</button>
+            </div>
+            <div class="activity-list">
+              ${recent.length ? recent.map((item) => `<button class="activity-row" type="button" data-nav="history"><span>${escapeHtml(item.exercise)}</span><strong>${escapeHtml(item.value)}</strong>${iconSvg("chevronRight")}</button>`).join("") : '<p class="home-empty">Complete a workout to see your recent activity.</p>'}
+            </div>
+          </section>
+
+          <section class="home-panel highlights-panel">
+            <div class="home-section-heading home-section-heading-action">
+              <span class="home-section-icon">${iconSvg("bars")}</span>
+              <h2>Progress Highlights</h2>
+              <button class="home-see-all" type="button" data-nav="data">See All ${iconSvg("chevronRight")}</button>
+            </div>
+            <div class="highlight-grid">
+              <div class="highlight-tile"><span>Workouts This Week</span><strong>${homeWorkoutCountThisWeek()}</strong></div>
+              <div class="highlight-tile"><span>Top Lift Recently</span><strong>${escapeHtml(topLift.exercise)}</strong><small>${escapeHtml(topLift.weight)}</small></div>
+              <div class="highlight-tile"><span>Most Improved</span><strong>${escapeHtml(improved.exercise)}</strong><small class="highlight-positive">${escapeHtml(improved.value)}</small></div>
+            </div>
+          </section>
+        </div>
+        <nav class="home-nav" aria-label="Primary navigation">
+          <button class="home-nav-item active" type="button" data-nav="home" aria-current="page">${iconSvg("home")}<span>Home</span></button>
+          <button class="home-nav-item" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
+          <button class="home-nav-item" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
+          <button class="home-nav-item" type="button" data-nav="settings">${iconSvg("settings")}<span>Settings</span></button>
+        </nav>
+      </section>
+    `;
+  }
+
+  function bindHomePage() {
+    app.querySelectorAll("[data-nav]").forEach((button) => {
+      button.addEventListener("click", () => setPage(button.dataset.nav));
+    });
   }
 
   function bindShell() {
@@ -2033,7 +2238,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=50", { updateViaCache: "none" })
+        .register("sw.js?v=51", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

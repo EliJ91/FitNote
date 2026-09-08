@@ -257,6 +257,374 @@ button.is-pressing:not([disabled]) {
   overflow: hidden;
 }
 
+.home-page {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(21, 118, 74, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(7, 16, 13, 0.98), rgba(2, 6, 4, 0.98));
+}
+
+.home-content {
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: none;
+  padding: 28px 22px 30px;
+}
+
+.home-content::-webkit-scrollbar {
+  display: none;
+}
+
+.home-branding {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.home-logo {
+  width: 98px;
+  height: 98px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(22, 230, 125, 0.2));
+}
+
+.home-wordmark {
+  display: flex;
+  align-items: baseline;
+  font-size: 2.9rem;
+  font-weight: 850;
+  letter-spacing: 0;
+  line-height: 0.95;
+}
+
+.home-wordmark span:first-child {
+  color: var(--text);
+}
+
+.home-wordmark span:last-child {
+  color: #22e27d;
+}
+
+.home-branding p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.home-welcome {
+  margin: 28px 0 24px;
+  text-align: center;
+  color: var(--text);
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.home-welcome span {
+  color: #20e67e;
+}
+
+.home-panel {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    linear-gradient(165deg, rgba(18, 29, 25, 0.86), rgba(7, 13, 11, 0.94)),
+    var(--card);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 30px rgba(0, 0, 0, 0.2);
+}
+
+.snapshot-panel,
+.activity-panel,
+.highlights-panel {
+  padding: 18px;
+}
+
+.home-section-heading {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-section-heading h2 {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.28rem;
+  line-height: 1.15;
+}
+
+.home-section-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: #25ef87;
+}
+
+.home-section-icon .icon {
+  width: 31px;
+  height: 31px;
+}
+
+.snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.snapshot-item {
+  min-width: 0;
+  padding: 0 14px;
+}
+
+.snapshot-item:first-child {
+  padding-left: 0;
+}
+
+.snapshot-item + .snapshot-item {
+  border-left: 1px solid rgba(158, 173, 180, 0.32);
+}
+
+.snapshot-item span,
+.snapshot-item small,
+.highlight-tile span,
+.highlight-tile small {
+  display: block;
+  color: var(--muted);
+}
+
+.snapshot-item span {
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+.snapshot-item strong {
+  display: block;
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+  font-size: 1.18rem;
+  line-height: 1.1;
+}
+
+.snapshot-item small {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.home-start {
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 14px;
+  margin: 16px 0;
+  padding: 14px 18px;
+  border: 1px solid rgba(79, 255, 151, 0.62);
+  border-radius: 20px;
+  background: linear-gradient(105deg, #20e87f, #43f58b 50%, #1de47a);
+  color: #020604;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 18px 34px rgba(21, 220, 116, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.home-start-icon,
+.home-start-copy,
+.home-start > .icon {
+  display: grid;
+  align-items: center;
+}
+
+.home-start-icon {
+  place-items: center;
+}
+
+.home-start-icon .icon {
+  width: 42px;
+  height: 42px;
+}
+
+.home-start-copy {
+  gap: 4px;
+}
+
+.home-start-copy strong {
+  font-size: 1.48rem;
+  line-height: 1;
+}
+
+.home-start-copy small {
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.home-start > .icon {
+  width: 27px;
+  height: 27px;
+}
+
+.activity-panel,
+.highlights-panel {
+  margin-top: 16px;
+}
+
+.home-section-heading-action {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+}
+
+.home-see-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  padding: 2px 0;
+  background: transparent;
+  color: #20e67e;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.home-see-all .icon {
+  width: 19px;
+  height: 19px;
+}
+
+.activity-list {
+  margin-top: 16px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.activity-row {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 18px;
+  align-items: center;
+  gap: 10px;
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 10px 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.activity-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.02rem;
+  font-weight: 700;
+}
+
+.activity-row strong {
+  font-size: 0.98rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.activity-row .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--muted);
+}
+
+.home-empty {
+  margin: 0;
+  padding: 18px 0 4px;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.highlight-tile {
+  min-width: 0;
+  min-height: 122px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(13, 24, 20, 0.7);
+}
+
+.highlight-tile span {
+  font-size: 0.8rem;
+  line-height: 1.2;
+}
+
+.highlight-tile strong {
+  min-width: 0;
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  font-size: 1.08rem;
+  line-height: 1.15;
+}
+
+.highlight-tile:first-child strong {
+  font-size: 2.25rem;
+  line-height: 0.95;
+}
+
+.highlight-tile small {
+  margin-top: 5px;
+  font-size: 1rem;
+}
+
+.highlight-positive {
+  color: #25ef87 !important;
+  font-weight: 750;
+}
+
+.home-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-height: 84px;
+  padding: 10px 10px max(10px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(39, 52, 47, 0.88);
+  background: rgba(3, 8, 6, 0.96);
+}
+
+.home-nav-item {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  border: 0;
+  padding: 5px 2px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.home-nav-item .icon {
+  width: 28px;
+  height: 28px;
+}
+
+.home-nav-item.active {
+  color: #24ee87;
+}
+
 .auth-screen {
   grid-template-rows: 1fr;
   padding: max(34px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom));
@@ -1229,6 +1597,110 @@ tr.selected td {
   .screen {
     padding-left: 14px;
     padding-right: 14px;
+  }
+
+  .home-content {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .home-logo {
+    width: 84px;
+    height: 84px;
+  }
+
+  .home-wordmark {
+    font-size: 2.5rem;
+  }
+
+  .home-welcome {
+    margin-top: 22px;
+    margin-bottom: 20px;
+    font-size: 1.72rem;
+  }
+
+  .snapshot-panel,
+  .activity-panel,
+  .highlights-panel {
+    padding: 15px;
+  }
+
+  .snapshot-item {
+    padding: 0 9px;
+  }
+
+  .snapshot-item span {
+    font-size: 0.75rem;
+  }
+
+  .snapshot-item strong {
+    font-size: 1rem;
+  }
+
+  .snapshot-item small {
+    font-size: 0.68rem;
+  }
+
+  .home-start {
+    grid-template-columns: 39px minmax(0, 1fr) 22px;
+    gap: 10px;
+    min-height: 82px;
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .home-start-icon .icon {
+    width: 35px;
+    height: 35px;
+  }
+
+  .home-start-copy strong {
+    font-size: 1.23rem;
+  }
+
+  .home-start-copy small {
+    font-size: 0.78rem;
+  }
+
+  .home-section-heading h2 {
+    font-size: 1.1rem;
+  }
+
+  .home-see-all {
+    font-size: 0.78rem;
+  }
+
+  .highlight-grid {
+    gap: 7px;
+  }
+
+  .highlight-tile {
+    min-height: 110px;
+    padding: 10px;
+  }
+
+  .highlight-tile span {
+    font-size: 0.7rem;
+  }
+
+  .highlight-tile strong {
+    font-size: 0.94rem;
+  }
+
+  .highlight-tile:first-child strong {
+    font-size: 2rem;
+  }
+
+  .highlight-tile small {
+    font-size: 0.88rem;
+  }
+
+  .home-nav {
+    min-height: 76px;
+  }
+
+  .home-nav-item {
+    font-size: 0.75rem;
   }
 
   .topbar h1 {
