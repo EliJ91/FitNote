@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.35";
+  const APP_VERSION = "1.3.36";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "workout_planner_data";
   const LEGACY_SUPABASE_TABLE = "fitnote_data";
@@ -51,6 +51,8 @@
   let state = loadState();
   let currentSessionId = null;
   let currentPage = "home";
+  let routinesSearchTerm = "";
+  let routinesCategory = "All";
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -221,6 +223,8 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>',
       user:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="7" r="4"></circle><path d="M5 21v-2a7 7 0 0 1 14 0v2"></path></svg>',
+      search:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>',
       bars:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11"></path><path d="M12 19V5"></path><path d="M19 19V8"></path></svg>',
       clock:
@@ -798,6 +802,11 @@
       bindHomePage();
       return;
     }
+    if (currentPage === "routines") {
+      app.innerHTML = renderRoutinesPage();
+      bindRoutinesPage();
+      return;
+    }
     const title = currentPage === "routine" ? "FitNote" : titleForPage(currentPage);
     app.innerHTML = shell(title, bodyForPage(currentPage));
     bindShell();
@@ -818,6 +827,7 @@
   function titleForPage(page) {
     return {
       home: "FitNote",
+      routines: "Routines",
       new: "New Routine",
       history: "History",
       data: "Data",
@@ -827,6 +837,7 @@
 
   function bodyForPage(page) {
     if (page === "home") return renderHomePage();
+    if (page === "routines") return renderRoutinesPage();
     if (page === "new") return renderNewRoutinePage();
     if (page === "history") return renderHistoryPage();
     if (page === "data") return renderDataPage();
@@ -920,6 +931,126 @@
     return { exercise: best.exercise, value: `+${formatWeight(best.improvement)} lb` };
   }
 
+  function routineCategoryFor(name) {
+    const text = String(name || "").toLowerCase();
+    if (/core|abs|oblique/.test(text)) return "Core";
+    if (/leg|lower|squat|glute|hamstring|quad|calf/.test(text)) return "Lower Body";
+    if (/push|pull|chest|back|shoulder|arm|upper/.test(text)) return "Upper Body";
+    return "Strength";
+  }
+
+  function routineMatchesCategory(name, category) {
+    if (category === "All") return true;
+    if (category === "Strength") return true;
+    return routineCategoryFor(name) === category;
+  }
+
+  function routineSubtitle(name) {
+    const known = {
+      "push day": "Chest - Shoulders - Triceps",
+      "pull day": "Back - Biceps",
+      legs: "Quads - Hamstrings - Glutes - Calves",
+      chest: "Chest - Upper Body",
+      "chest day": "Chest - Upper Body",
+      back: "Lats - Traps - Rear Delts",
+      shoulders: "Delts - Upper Body",
+      arms: "Biceps - Triceps",
+      core: "Abs - Obliques - Lower Back",
+    };
+    const key = String(name || "").toLowerCase();
+    if (known[key]) return known[key];
+    const rows = (state.routines[name] || []).filter((row) => row.exercise);
+    return rows.slice(0, 3).map((row) => row.exercise.split(" ").slice(-2).join(" ")).join(" - ") || "Build your session";
+  }
+
+  function routineExerciseCount(name) {
+    const count = (state.routines[name] || []).filter((row) => row.exercise && row.active !== false).length;
+    return `${count} exercise${count === 1 ? "" : "s"}`;
+  }
+
+  function daysAgoLabel(date) {
+    if (!date) return "No workouts yet";
+    const today = new Date(`${TODAY}T12:00:00`);
+    const previous = new Date(`${date}T12:00:00`);
+    const days = Math.max(0, Math.floor((today - previous) / 86400000));
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `Last: ${days} days ago`;
+    const weeks = Math.max(1, Math.round(days / 7));
+    return `Last: ${weeks} week${weeks === 1 ? "" : "s"} ago`;
+  }
+
+  function routineLastCompletedLabel(name) {
+    const session = historySessions().find((item) => item.routine_name === name);
+    const date = session ? String(session.completed_at || session.started_at || "").slice(0, 10) : "";
+    return daysAgoLabel(date);
+  }
+
+  function filteredRoutineNames() {
+    const query = routinesSearchTerm.trim().toLocaleLowerCase();
+    return routineNames().filter((name) => {
+      if (!routineMatchesCategory(name, routinesCategory)) return false;
+      if (!query) return true;
+      return `${name} ${routineSubtitle(name)}`.toLocaleLowerCase().includes(query);
+    });
+  }
+
+  function renderRoutinesPage() {
+    const filters = ["All", "Strength", "Upper Body", "Lower Body", "Core"];
+    const routines = filteredRoutineNames();
+    return `
+      <section class="routines-page">
+        <div class="routines-content">
+          <header class="routines-brand">
+            <img class="routines-brand-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
+            <span>FitNote</span>
+          </header>
+          <div class="routines-heading">
+            <h1>Select Routine</h1>
+            <p>Pick a routine to start today.</p>
+          </div>
+          <label class="routine-search">
+            ${iconSvg("search")}
+            <input type="search" value="${escapeAttr(routinesSearchTerm)}" placeholder="Search routines..." aria-label="Search routines" data-routines-search>
+          </label>
+          <div class="routine-filter-row" aria-label="Routine filters">
+            ${filters
+              .map(
+                (filter) =>
+                  `<button class="routine-filter ${routinesCategory === filter ? "active" : ""}" type="button" data-routines-filter="${escapeAttr(filter)}">${escapeHtml(filter)}</button>`
+              )
+              .join("")}
+          </div>
+          <div class="routine-card-grid">
+            ${
+              routines.length
+                ? routines.map((name) => renderRoutineLandingCard(name)).join("")
+                : '<p class="routines-empty">No routines match your search.</p>'
+            }
+          </div>
+        </div>
+        ${renderBottomNav("routines")}
+      </section>
+    `;
+  }
+
+  function renderRoutineLandingCard(name) {
+    return `
+      <button class="routine-card-tile" type="button" data-routine-start="${escapeAttr(name)}">
+        <span class="routine-card-art" aria-hidden="true"></span>
+        <span class="routine-card-copy">
+          <strong>${escapeHtml(name)}</strong>
+          <small>${escapeHtml(routineSubtitle(name))}</small>
+          <span class="routine-card-meta">
+            <span>${iconSvg("plusCircle")}${escapeHtml(routineExerciseCount(name))}</span>
+            <span>${iconSvg("clock")}${escapeHtml(routineLastCompletedLabel(name))}</span>
+          </span>
+        </span>
+        <span class="routine-card-chevron">${iconSvg("chevronRight")}</span>
+      </button>
+    `;
+  }
+
   function renderHomePage() {
     const completed = historySessions();
     const lastSession = completed[0] || null;
@@ -958,7 +1089,7 @@
             </div>
           </section>
 
-          <button class="home-start" type="button" data-nav="routine">
+          <button class="home-start" type="button" data-nav="routines">
             <span class="home-start-icon">${iconSvg("play")}</span>
             <span class="home-start-copy"><strong>Start Workout</strong><small>Go to Select Routine / Workout</small></span>
             ${iconSvg("chevronRight")}
@@ -994,11 +1125,11 @@
   }
 
   function renderBottomNav(activePage) {
-    const active = activePage === "new" ? "routine" : activePage;
+    const active = activePage === "routine" || activePage === "new" ? "routines" : activePage;
     return `
       <nav class="home-nav" aria-label="Primary navigation">
         <button class="home-nav-item ${active === "home" ? "active" : ""}" type="button" data-nav="home" ${active === "home" ? 'aria-current="page"' : ""}>${iconSvg("home")}<span>Home</span></button>
-        <button class="home-nav-item ${active === "history" ? "active" : ""}" type="button" data-nav="history" ${active === "history" ? 'aria-current="page"' : ""}>${iconSvg("history")}<span>History</span></button>
+        <button class="home-nav-item ${active === "routines" ? "active" : ""}" type="button" data-nav="routines" ${active === "routines" ? 'aria-current="page"' : ""}>${iconSvg("play")}<span>Routines</span></button>
         <button class="home-nav-item ${active === "data" ? "active" : ""}" type="button" data-nav="data" ${active === "data" ? 'aria-current="page"' : ""}>${iconSvg("bars")}<span>Progress</span></button>
         <button class="home-nav-item ${active === "settings" ? "active" : ""}" type="button" data-nav="settings" ${active === "settings" ? 'aria-current="page"' : ""}>${iconSvg("settings")}<span>Settings</span></button>
       </nav>
@@ -1008,6 +1139,40 @@
   function bindHomePage() {
     app.querySelectorAll("[data-nav]").forEach((button) => {
       button.addEventListener("click", () => setPage(button.dataset.nav));
+    });
+  }
+
+  function bindRoutinesPage() {
+    app.querySelectorAll("[data-nav]").forEach((button) => {
+      button.addEventListener("click", () => setPage(button.dataset.nav));
+    });
+    const search = app.querySelector("[data-routines-search]");
+    if (search) {
+      search.addEventListener("input", () => {
+        routinesSearchTerm = search.value;
+        render();
+        const nextSearch = app.querySelector("[data-routines-search]");
+        if (nextSearch) {
+          nextSearch.focus();
+          nextSearch.setSelectionRange(nextSearch.value.length, nextSearch.value.length);
+        }
+      });
+    }
+    app.querySelectorAll("[data-routines-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        routinesCategory = button.dataset.routinesFilter || "All";
+        render();
+      });
+    });
+    app.querySelectorAll("[data-routine-start]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const routine = button.dataset.routineStart;
+        if (!routine || !state.routines[routine]) return;
+        state.selected_routine = routine;
+        currentSessionId = null;
+        saveState();
+        setPage("routine");
+      });
     });
   }
 
@@ -1652,6 +1817,7 @@
           <p class="section-label">Navigate</p>
           <div class="settings-actions">
             <button class="settings-action" type="button" data-nav="home">${iconSvg("home")}<span>Home</span></button>
+            <button class="settings-action" type="button" data-nav="routines">${iconSvg("play")}<span>Routines</span></button>
             <button class="settings-action" type="button" data-nav="routine">${iconSvg("play")}<span>Workout</span></button>
             <button class="settings-action" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
             <button class="settings-action" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
@@ -2220,7 +2386,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=57", { updateViaCache: "none" })
+        .register("sw.js?v=58", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
