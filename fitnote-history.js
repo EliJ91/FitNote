@@ -322,6 +322,38 @@
     return normalizeRoutineImageId(preferred) || inferRoutineImageId(name, rows);
   }
 
+  function normalizeRoutineDescription(value) {
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, 30);
+  }
+
+  function inferRoutineDescription(name, rows = []) {
+    const known = {
+      "push day": "Chest - Shoulders - Triceps",
+      "pull day": "Back - Biceps",
+      legs: "Quads - Hamstrings - Glutes",
+      "legs day": "Quads - Hamstrings - Glutes",
+      chest: "Chest - Upper Body",
+      "chest day": "Chest - Upper Body",
+      back: "Lats - Traps - Rear Delts",
+      shoulders: "Delts - Upper Body",
+      arms: "Biceps - Triceps",
+      core: "Abs - Obliques - Lower Back",
+    };
+    const key = String(name || "").toLocaleLowerCase();
+    if (known[key]) return known[key];
+    const description = rows
+      .map((row) => row.exercise || row.exercise_name || row.name || "")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((exercise) => String(exercise).split(" ").slice(-2).join(" "))
+      .join(" - ");
+    return normalizeRoutineDescription(description || "Build your session");
+  }
+
+  function routineDescriptionFor(name, rows = [], preferred = "") {
+    return normalizeRoutineDescription(preferred) || inferRoutineDescription(name, rows);
+  }
+
   function normalizeTextSize(value) {
     const text = String(value || "normal").trim().toLocaleLowerCase();
     return TEXT_SIZES.includes(text) ? text : "normal";
@@ -627,7 +659,8 @@
       id: routine.id,
       name: routine.name,
       category: routine.category || routine.name || "",
-      image_id: routineImageIdFor(routine.name, routine.exercises || [], routine.image_id),
+      description: routineDescriptionFor(routine.name, data.routines?.[routine.name] || routine.exercises || [], routine.description),
+      image_id: routineImageIdFor(routine.name, data.routines?.[routine.name] || routine.exercises || [], routine.image_id),
       exercises: (routine.exercises || [])
         .filter((exercise) => exerciseIds.has(exercise.exercise_id))
         .map((exercise, index) => ({
@@ -763,12 +796,21 @@
     if (existing) {
       existing.name = routineName;
       existing.category = existing.category || routineName;
+      existing.description = routineDescriptionFor(routineName, rows, existing.description);
       existing.image_id = routineImageIdFor(routineName, rows, existing.image_id);
       existing.exercises = exercises;
       if (existing.active === undefined) existing.active = true;
       return existing.id;
     }
-    data.routine_definitions.push({ id, name: routineName, category: routineName, image_id: routineImageIdFor(routineName, rows), exercises, active: true });
+    data.routine_definitions.push({
+      id,
+      name: routineName,
+      category: routineName,
+      description: routineDescriptionFor(routineName, rows),
+      image_id: routineImageIdFor(routineName, rows),
+      exercises,
+      active: true,
+    });
     return id;
   }
 
@@ -783,8 +825,11 @@
       if (!routine || typeof routine !== "object") return;
       const imageId = normalizeRoutineImageId(routine.image_id || routine.imageId || routine.photo_id || routine.photoId);
       if (imageId) routine.image_id = imageId;
+      routine.description = routineDescriptionFor(routine.name, data.routines?.[routine.name] || routine.exercises || [], routine.description || routine.subtitle || routine.summary);
       delete routine.image;
       delete routine.imageId;
+      delete routine.subtitle;
+      delete routine.summary;
       delete routine.image_url;
       delete routine.imageUrl;
       delete routine.image_path;
@@ -1253,6 +1298,8 @@
     routineImageIds,
     routineImageIdFor,
     normalizeRoutineImageId,
+    routineDescriptionFor,
+    normalizeRoutineDescription,
     normalizeTextSize,
     normalizeRoutineColumns,
     ensureHistoricalModel,

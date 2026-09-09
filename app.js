@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.41";
+  const APP_VERSION = "1.3.42";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -303,6 +303,10 @@
     return workoutHistory.normalizeRoutineColumns ? workoutHistory.normalizeRoutineColumns(value) : value === "one" ? "one" : "two";
   }
 
+  function normalizeRoutineDescription(value) {
+    return workoutHistory.normalizeRoutineDescription ? workoutHistory.normalizeRoutineDescription(value) : String(value || "").replace(/\s+/g, " ").trim().slice(0, 30);
+  }
+
   function currentTextSize() {
     return normalizeTextSize(state?.settings?.text_size);
   }
@@ -339,6 +343,19 @@
 
   function routineDefinition(name) {
     return (state.routine_definitions || []).find((routine) => routine.name === name) || null;
+  }
+
+  function routineDescription(name) {
+    return workoutHistory.routineDescriptionFor(name, state.routines[name] || [], routineDefinition(name)?.description);
+  }
+
+  function setRoutineDescription(name, description) {
+    const text = normalizeRoutineDescription(description);
+    state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
+    const definition = routineDefinition(name);
+    if (!definition) return false;
+    definition.description = text || workoutHistory.routineDescriptionFor(name, state.routines[name] || []);
+    return true;
   }
 
   function routineImageId(name) {
@@ -848,11 +865,36 @@
   function closeEditMode(saveChanges) {
     if (!editMode) return;
     if (!saveChanges && editSnapshot) {
-      state.routines[state.selected_routine] = editSnapshot;
+      const snapshotRows = Array.isArray(editSnapshot) ? editSnapshot : editSnapshot.rows;
+      state.routines[state.selected_routine] = snapshotRows;
+      if (!Array.isArray(editSnapshot)) setRoutineDescription(state.selected_routine, editSnapshot.description);
       saveState();
     }
     editMode = false;
     editSnapshot = null;
+  }
+
+  function renderRoutineActionsToolbar() {
+    return `
+      <div class="routine-toolbar">
+        <button class="routine-title-edit" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
+        <div class="routine-actions-menu" data-routine-actions-menu hidden>
+          <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
+          <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
+          <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPageTitle(title) {
+    if (currentPage !== "routine") return `<h1>${escapeHtml(title)}</h1>`;
+    return `
+      <div class="routine-title-row">
+        <h1>${escapeHtml(title)}</h1>
+        ${renderRoutineActionsToolbar()}
+      </div>
+    `;
   }
 
   function shell(title, body) {
@@ -860,7 +902,7 @@
       <section class="screen">
         <header class="topbar app-page-header">
           ${renderAppBrandHeader()}
-          <h1>${escapeHtml(title)}</h1>
+          ${renderPageTitle(title)}
         </header>
         <main class="page-body">${body}</main>
         ${renderBottomNav(currentPage)}
@@ -1020,24 +1062,6 @@
     return { exercise: best.exercise, value: `+${formatWeight(best.improvement)} lb` };
   }
 
-  function routineSubtitle(name) {
-    const known = {
-      "push day": "Chest - Shoulders - Triceps",
-      "pull day": "Back - Biceps",
-      legs: "Quads - Hamstrings - Glutes - Calves",
-      chest: "Chest - Upper Body",
-      "chest day": "Chest - Upper Body",
-      back: "Lats - Traps - Rear Delts",
-      shoulders: "Delts - Upper Body",
-      arms: "Biceps - Triceps",
-      core: "Abs - Obliques - Lower Back",
-    };
-    const key = String(name || "").toLowerCase();
-    if (known[key]) return known[key];
-    const rows = (state.routines[name] || []).filter((row) => row.exercise);
-    return rows.slice(0, 3).map((row) => row.exercise.split(" ").slice(-2).join(" ")).join(" - ") || "Build your session";
-  }
-
   function routineExerciseCount(name) {
     const count = (state.routines[name] || []).filter((row) => row.exercise && row.active !== false).length;
     return `${count} ex`;
@@ -1059,7 +1083,7 @@
 
   function filteredRoutineNames() {
     const query = routinesSearchTerm.trim().toLocaleLowerCase();
-    return routineNames().filter((name) => !query || `${name} ${routineSubtitle(name)}`.toLocaleLowerCase().includes(query));
+    return routineNames().filter((name) => !query || `${name} ${routineDescription(name)}`.toLocaleLowerCase().includes(query));
   }
 
   function renderRoutinesPage() {
@@ -1099,13 +1123,15 @@
         <span class="routine-card-art" aria-hidden="true"><img src="${escapeAttr(routineImagePath(imageId))}" alt=""></span>
         <span class="routine-card-copy">
           <strong>${escapeHtml(name)}</strong>
-          <small>${escapeHtml(routineSubtitle(name))}</small>
+        </span>
+        <span class="routine-card-chevron">${iconSvg("chevronRight")}</span>
+        <span class="routine-card-detail-row">
+          <small>${escapeHtml(routineDescription(name))}</small>
           <span class="routine-card-meta">
             <span>${iconSvg("plusCircle")}${escapeHtml(routineExerciseCount(name))}</span>
             <span>${iconSvg("clock")}${escapeHtml(routineLastCompletedLabel(name))}</span>
           </span>
         </span>
-        <span class="routine-card-chevron">${iconSvg("chevronRight")}</span>
       </button>
     `;
   }
@@ -1246,16 +1272,7 @@
     const session = editMode ? null : currentWorkoutSession();
     return `
       <section class="routine-page">
-        <div class="routine-page-actions">
-          <div class="routine-toolbar">
-            <button class="btn btn-secondary routine-tool" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
-            <div class="routine-actions-menu" data-routine-actions-menu hidden>
-              <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
-              <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
-              <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
-            </div>
-          </div>
-        </div>
+        ${renderRoutineDescriptionPanel(currentRoutine())}
         <div class="routine-list" data-routine-list>
           ${rows.map((row, index) => renderExerciseCard(row, index)).join("")}
         </div>
@@ -1266,6 +1283,18 @@
         <div class="scroll-float" data-scroll-float></div>
       </section>
     `;
+  }
+
+  function renderRoutineDescriptionPanel(routine) {
+    const description = routineDescription(routine);
+    if (editMode) {
+      return `
+        <label class="routine-description-panel edit">
+          <textarea class="routine-description-input" maxlength="30" rows="2" data-routine-description aria-label="Routine description">${escapeHtml(description)}</textarea>
+        </label>
+      `;
+    }
+    return `<p class="routine-description-panel">${escapeHtml(description)}</p>`;
   }
 
   function renderExerciseCard(row, index) {
@@ -1359,6 +1388,15 @@
     app.querySelector("[data-action='create-new-routine']").addEventListener("click", () => setPage("new"));
     const addButton = app.querySelector("[data-action='add-exercise']");
     if (addButton) addButton.addEventListener("click", addExercise);
+    const descriptionInput = app.querySelector("[data-routine-description]");
+    if (descriptionInput) {
+      descriptionInput.addEventListener("input", () => {
+        const text = normalizeRoutineDescription(descriptionInput.value);
+        if (descriptionInput.value !== text) descriptionInput.value = text;
+        setRoutineDescription(currentRoutine(), text);
+        saveState();
+      });
+    }
 
     app.querySelectorAll("[data-field]").forEach((input) => {
       input.addEventListener("input", () => {
@@ -1562,7 +1600,10 @@
     if (editMode) {
       closeEditMode(false);
     } else {
-      editSnapshot = clone(currentRows());
+      editSnapshot = {
+        rows: clone(currentRows()),
+        description: routineDescription(currentRoutine()),
+      };
       editMode = true;
     }
     render();
@@ -1629,6 +1670,8 @@
   }
 
   function syncEditFieldsFromDom() {
+    const descriptionInput = app.querySelector("[data-routine-description]");
+    if (descriptionInput) setRoutineDescription(currentRoutine(), descriptionInput.value);
     app.querySelectorAll("[data-field]").forEach((input) => {
       const row = currentRows()[Number(input.dataset.index)];
       if (!row) return;
@@ -1731,6 +1774,7 @@
     }
     const ok = await confirmDialog("Delete routine", `Delete ${routine}?`, "Delete");
     if (!ok) return;
+    if (editMode) closeEditMode(true);
     delete state.routines[routine];
     state.routine_definitions = state.routine_definitions.map((item) =>
       item.name === routine ? { ...item, active: false } : item
@@ -1740,7 +1784,6 @@
       currentSessionId = null;
       dataSelection = { kind: "routine", value: state.selected_routine };
     }
-    closeEditMode(false);
     saveState();
     render();
   }
@@ -1880,7 +1923,10 @@
       newRoutineNameDraft = "";
       newRoutineImagePickerOpen = false;
       editMode = true;
-      editSnapshot = clone(state.routines[name]);
+      editSnapshot = {
+        rows: clone(state.routines[name]),
+        description: routineDescription(name),
+      };
       saveState();
       currentPage = "routine";
       render();
@@ -2520,7 +2566,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=63", { updateViaCache: "none" })
+        .register("sw.js?v=64", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

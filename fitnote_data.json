@@ -1055,6 +1055,7 @@
       "id": "routine_1klq2mb",
       "name": "Push Day",
       "category": "Push Day",
+      "description": "Chest - Shoulders - Triceps",
       "image_id": "Push",
       "exercises": [
         {
@@ -1112,6 +1113,7 @@
       "id": "routine_9gp8tk",
       "name": "Pull Day",
       "category": "Pull Day",
+      "description": "Back - Biceps",
       "image_id": "Pull",
       "exercises": [
         {
@@ -1169,6 +1171,7 @@
       "id": "routine_1fbaify",
       "name": "Legs Day",
       "category": "Legs Day",
+      "description": "Quads - Hamstrings - Glutes",
       "image_id": "FullLegs",
       "exercises": [
         {
@@ -1226,6 +1229,7 @@
       "id": "routine_1o3p751",
       "name": "Imported",
       "category": "Imported",
+      "description": "Build your session",
       "image_id": "FullLegs",
       "exercises": [
         {

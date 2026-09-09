@@ -159,6 +159,43 @@ button.is-pressing:not([disabled]) {
   overflow-wrap: anywhere;
 }
 
+.routine-title-row {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.routine-title-row h1 {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.routine-title-edit {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d4e3dc;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.routine-title-edit:hover,
+.routine-title-edit:focus-visible {
+  color: #24ee87;
+  outline: 0;
+}
+
+.routine-title-edit .icon {
+  width: 19px;
+  height: 19px;
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;
@@ -628,7 +665,7 @@ button.is-pressing:not([disabled]) {
 
 .app-shell.routine-columns-one .routine-card-tile {
   grid-template-columns: 58px minmax(0, 1fr) 18px;
-  min-height: 94px;
+  min-height: 100px;
   gap: 11px;
   padding: 11px;
 }
@@ -638,15 +675,11 @@ button.is-pressing:not([disabled]) {
   height: 64px;
 }
 
-.app-shell.routine-columns-one .routine-card-copy {
-  gap: 6px;
-}
-
 .app-shell.routine-columns-one .routine-card-copy strong {
   font-size: calc(1.05rem * var(--ui-text-scale));
 }
 
-.app-shell.routine-columns-one .routine-card-copy small {
+.app-shell.routine-columns-one .routine-card-detail-row small {
   font-size: calc(0.76rem * var(--ui-text-scale));
 }
 
@@ -660,9 +693,10 @@ button.is-pressing:not([disabled]) {
 
 .routine-card-tile {
   min-width: 0;
-  min-height: 78px;
+  min-height: 88px;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr) 15px;
+  grid-template-rows: auto auto;
   align-items: start;
   gap: 7px;
   border: 1px solid var(--line-soft);
@@ -697,11 +731,12 @@ button.is-pressing:not([disabled]) {
 .routine-card-copy {
   min-width: 0;
   display: grid;
-  gap: 4px;
+  align-content: center;
+  min-height: 46px;
 }
 
 .routine-card-copy strong,
-.routine-card-copy small {
+.routine-card-detail-row small {
   min-width: 0;
   overflow: visible;
   overflow-wrap: break-word;
@@ -713,7 +748,19 @@ button.is-pressing:not([disabled]) {
   line-height: 1.1;
 }
 
-.routine-card-copy small {
+.routine-card-detail-row {
+  grid-column: 1 / -1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(45, 61, 55, 0.78);
+}
+
+.routine-card-detail-row small {
+  flex: 1 1 auto;
   color: var(--muted);
   font-size: calc(0.58rem * var(--ui-text-scale));
   line-height: 1.2;
@@ -721,9 +768,11 @@ button.is-pressing:not([disabled]) {
 
 .routine-card-meta {
   min-width: 0;
+  flex: 0 1 auto;
   display: flex;
   flex-wrap: nowrap;
-  gap: 6px;
+  justify-content: flex-end;
+  gap: 7px;
   color: var(--muted);
   font-size: calc(0.54rem * var(--ui-text-scale));
 }
@@ -731,7 +780,7 @@ button.is-pressing:not([disabled]) {
 .routine-card-meta span {
   min-width: 0;
   max-width: 100%;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -830,7 +879,7 @@ button.is-pressing:not([disabled]) {
   min-height: 0;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  gap: 14px;
+  gap: 10px;
 }
 
 .section-label {
@@ -842,10 +891,39 @@ button.is-pressing:not([disabled]) {
   text-transform: uppercase;
 }
 
-.routine-page-actions {
-  min-height: 56px;
+.routine-description-panel {
+  min-height: 42px;
+  max-height: 66px;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  margin: 0;
+  border: 1px solid rgba(36, 238, 135, 0.2);
+  border-radius: 8px;
+  background: rgba(8, 16, 13, 0.38);
+  color: var(--muted);
+  padding: 9px 11px;
+  font-size: calc(0.9rem * var(--ui-text-scale));
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.routine-description-panel.edit {
+  padding: 0;
+}
+
+.routine-description-input {
+  width: 100%;
+  min-height: 42px;
+  max-height: 66px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: var(--text);
+  padding: 9px 11px;
+  font: inherit;
+  line-height: 1.25;
 }
 
 .data-selector {
@@ -885,15 +963,6 @@ button.is-pressing:not([disabled]) {
   position: relative;
   display: flex;
   gap: 10px;
-}
-
-.routine-tool {
-  width: 56px;
-  min-height: 56px;
-  padding: 0;
-  border-radius: 8px;
-  display: grid;
-  place-items: center;
 }
 
 .data-menu {
@@ -2039,7 +2108,7 @@ tr.selected td {
     font-size: calc(0.78rem * var(--ui-text-scale));
   }
 
-  .routine-card-copy small {
+  .routine-card-detail-row small {
     font-size: calc(0.54rem * var(--ui-text-scale));
   }
 
@@ -2056,8 +2125,9 @@ tr.selected td {
     gap: 8px;
   }
 
-  .routine-tool {
-    width: 48px;
+  .routine-title-edit {
+    width: 30px;
+    height: 30px;
   }
 
   .exercise-card {

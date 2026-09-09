@@ -52,6 +52,8 @@ function assertCleanModel(data) {
   assert.ok(incline.sets.every((set) => !("legacy_source" in set) && !("legacy_reps" in set)));
   assert.strictEqual(incline.exercise_id, history.presetExerciseId("Incline Barbell Bench Press"));
   assert.ok(data.routines["Push Day"].some((row) => row.exercise === "Cable Triceps Pushdown"));
+  assert.strictEqual(data.routine_definitions.find((routine) => routine.name === "Push Day").description, "Chest - Shoulders - Triceps");
+  assert.strictEqual(history.normalizeRoutineDescription("This routine description is too long"), "This routine description is to");
   assert.ok(!("groups" in data));
   assert.ok(!("sets" in data));
   assert.ok(!JSON.stringify(data).includes("legacy"));
