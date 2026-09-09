@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.42";
+  const APP_VERSION = "1.3.43";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -1123,10 +1123,10 @@
         <span class="routine-card-art" aria-hidden="true"><img src="${escapeAttr(routineImagePath(imageId))}" alt=""></span>
         <span class="routine-card-copy">
           <strong>${escapeHtml(name)}</strong>
+          <small>${escapeHtml(routineDescription(name))}</small>
         </span>
         <span class="routine-card-chevron">${iconSvg("chevronRight")}</span>
         <span class="routine-card-detail-row">
-          <small>${escapeHtml(routineDescription(name))}</small>
           <span class="routine-card-meta">
             <span>${iconSvg("plusCircle")}${escapeHtml(routineExerciseCount(name))}</span>
             <span>${iconSvg("clock")}${escapeHtml(routineLastCompletedLabel(name))}</span>
@@ -2566,7 +2566,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=64", { updateViaCache: "none" })
+        .register("sw.js?v=65", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

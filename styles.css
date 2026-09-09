@@ -679,7 +679,7 @@ button.is-pressing:not([disabled]) {
   font-size: calc(1.05rem * var(--ui-text-scale));
 }
 
-.app-shell.routine-columns-one .routine-card-detail-row small {
+.app-shell.routine-columns-one .routine-card-copy small {
   font-size: calc(0.76rem * var(--ui-text-scale));
 }
 
@@ -731,12 +731,13 @@ button.is-pressing:not([disabled]) {
 .routine-card-copy {
   min-width: 0;
   display: grid;
+  gap: 3px;
   align-content: center;
   min-height: 46px;
 }
 
 .routine-card-copy strong,
-.routine-card-detail-row small {
+.routine-card-copy small {
   min-width: 0;
   overflow: visible;
   overflow-wrap: break-word;
@@ -748,31 +749,29 @@ button.is-pressing:not([disabled]) {
   line-height: 1.1;
 }
 
+.routine-card-copy small {
+  color: var(--muted);
+  font-size: calc(0.58rem * var(--ui-text-scale));
+  line-height: 1.15;
+}
+
 .routine-card-detail-row {
   grid-column: 1 / -1;
   min-width: 0;
-  display: flex;
+  display: grid;
   align-items: center;
-  justify-content: space-between;
-  gap: 7px;
+  gap: 0;
   padding-top: 6px;
   border-top: 1px solid rgba(45, 61, 55, 0.78);
 }
 
-.routine-card-detail-row small {
-  flex: 1 1 auto;
-  color: var(--muted);
-  font-size: calc(0.58rem * var(--ui-text-scale));
-  line-height: 1.2;
-}
-
 .routine-card-meta {
   min-width: 0;
-  flex: 0 1 auto;
+  width: 100%;
   display: flex;
   flex-wrap: nowrap;
-  justify-content: flex-end;
-  gap: 7px;
+  justify-content: space-between;
+  gap: 10px;
   color: var(--muted);
   font-size: calc(0.54rem * var(--ui-text-scale));
 }
@@ -2108,7 +2107,7 @@ tr.selected td {
     font-size: calc(0.78rem * var(--ui-text-scale));
   }
 
-  .routine-card-detail-row small {
+  .routine-card-copy small {
     font-size: calc(0.54rem * var(--ui-text-scale));
   }
 
