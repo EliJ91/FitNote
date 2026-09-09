@@ -683,7 +683,7 @@ button.is-pressing:not([disabled]) {
 }
 
 .app-shell.routine-columns-one .routine-card-meta {
-  font-size: calc(0.68rem * var(--ui-text-scale));
+  font-size: calc(0.66rem * var(--ui-text-scale));
 }
 
 .routine-card-grid::-webkit-scrollbar {
@@ -767,18 +767,18 @@ button.is-pressing:not([disabled]) {
 .routine-card-meta {
   min-width: 0;
   width: 100%;
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
   justify-content: space-between;
-  gap: 10px;
+  align-items: center;
+  column-gap: 8px;
   color: var(--muted);
-  font-size: calc(0.54rem * var(--ui-text-scale));
+  font-size: calc(0.56rem * var(--ui-text-scale));
 }
 
 .routine-card-meta span {
   min-width: 0;
   max-width: 100%;
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -789,9 +789,16 @@ button.is-pressing:not([disabled]) {
   line-height: 1.15;
 }
 
+.routine-card-meta span:last-child {
+  width: 100%;
+  justify-self: end;
+  justify-content: flex-end;
+  text-align: right;
+}
+
 .routine-card-meta .icon {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   flex: 0 0 auto;
 }
 
@@ -2140,7 +2147,7 @@ tr.selected td {
 
   .routine-card-meta {
     gap: 4px;
-    font-size: calc(0.5rem * var(--ui-text-scale));
+    font-size: calc(0.52rem * var(--ui-text-scale));
   }
 
   .topbar h1 {
