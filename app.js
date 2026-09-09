@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.43";
+  const APP_VERSION = "1.3.44";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -75,7 +75,7 @@
   let routinesSearchTerm = "";
   let newRoutineNameDraft = "";
   let newRoutineImageId = "";
-  let newRoutineImagePickerOpen = false;
+  let routineImagePickerOpen = false;
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -806,8 +806,9 @@
     if (page === "new") {
       newRoutineNameDraft = "";
       newRoutineImageId = "";
-      newRoutineImagePickerOpen = false;
+      routineImagePickerOpen = false;
     }
+    if (page !== "new" && page !== "routine") routineImagePickerOpen = false;
     currentPage = page;
     if (page !== "routine") closeEditMode(false);
     selectedHistory = new Set();
@@ -868,23 +869,16 @@
       const snapshotRows = Array.isArray(editSnapshot) ? editSnapshot : editSnapshot.rows;
       state.routines[state.selected_routine] = snapshotRows;
       if (!Array.isArray(editSnapshot)) setRoutineDescription(state.selected_routine, editSnapshot.description);
+      if (!Array.isArray(editSnapshot)) setRoutineImageId(state.selected_routine, editSnapshot.image_id);
       saveState();
     }
     editMode = false;
     editSnapshot = null;
   }
 
-  function renderRoutineActionsToolbar() {
-    return `
-      <div class="routine-toolbar">
-        <button class="routine-title-edit" type="button" data-action="toggle-routine-actions" aria-label="Routine actions" title="Routine Actions">${iconSvg("edit")}</button>
-        <div class="routine-actions-menu" data-routine-actions-menu hidden>
-          <button class="card-menu-item" type="button" data-action="toggle-edit">${editMode ? "Cancel Edit" : "Edit Routine"}</button>
-          <button class="card-menu-item" type="button" data-action="create-new-routine" ${canCreateRoutines() ? "" : "disabled"}>Add New Routine</button>
-          <button class="card-menu-item danger" type="button" data-action="delete-current-routine">Delete Routine</button>
-        </div>
-      </div>
-    `;
+  function renderRoutineEditButton() {
+    if (editMode) return "";
+    return `<button class="routine-title-edit" type="button" data-action="toggle-edit" aria-label="Edit routine" title="Edit Routine">${iconSvg("edit")}</button>`;
   }
 
   function renderPageTitle(title) {
@@ -892,7 +886,7 @@
     return `
       <div class="routine-title-row">
         <h1>${escapeHtml(title)}</h1>
-        ${renderRoutineActionsToolbar()}
+        ${renderRoutineEditButton()}
       </div>
     `;
   }
@@ -1270,9 +1264,11 @@
   function renderRoutinePage() {
     const rows = editMode ? currentRows() : currentWorkoutRows();
     const session = editMode ? null : currentWorkoutSession();
+    const routine = currentRoutine();
     return `
       <section class="routine-page">
-        ${renderRoutineDescriptionPanel(currentRoutine())}
+        ${renderRoutineDescriptionPanel(routine)}
+        ${editMode ? renderRoutineImageDialog(routineImageId(routine)) : ""}
         <div class="routine-list" data-routine-list>
           ${rows.map((row, index) => renderExerciseCard(row, index)).join("")}
         </div>
@@ -1289,12 +1285,24 @@
     const description = routineDescription(routine);
     if (editMode) {
       return `
-        <label class="routine-description-panel edit">
-          <textarea class="routine-description-input" maxlength="30" rows="2" data-routine-description aria-label="Routine description">${escapeHtml(description)}</textarea>
-        </label>
+        <section class="routine-edit-overview">
+          ${renderRoutineImageEditButton(routine)}
+          <label class="routine-description-panel edit">
+            <textarea class="routine-description-input" maxlength="30" rows="2" data-routine-description aria-label="Routine description">${escapeHtml(description)}</textarea>
+          </label>
+        </section>
       `;
     }
     return `<p class="routine-description-panel">${escapeHtml(description)}</p>`;
+  }
+
+  function renderRoutineImageEditButton(routine) {
+    const selected = routineImageById(routineImageId(routine));
+    return `
+      <button class="routine-image-edit" type="button" data-action="open-routine-image-picker" aria-label="Change routine image" title="Change Image">
+        <span class="routine-image-edit-thumb"><img src="${escapeAttr(routineImagePath(selected.id))}" alt=""></span>
+      </button>
+    `;
   }
 
   function renderExerciseCard(row, index) {
@@ -1378,16 +1386,39 @@
 
   function bindRoutinePage() {
     app.querySelector("[data-action='save-routine']").addEventListener("click", saveRoutineButton);
-    app.querySelector("[data-action='toggle-routine-actions']").addEventListener("click", (event) => {
-      event.stopPropagation();
-      const menu = app.querySelector("[data-routine-actions-menu]");
-      if (menu) menu.hidden = !menu.hidden;
-    });
-    app.querySelector("[data-action='toggle-edit']").addEventListener("click", toggleEditMode);
-    app.querySelector("[data-action='delete-current-routine']").addEventListener("click", () => deleteRoutine(currentRoutine()));
-    app.querySelector("[data-action='create-new-routine']").addEventListener("click", () => setPage("new"));
+    const editButton = app.querySelector("[data-action='toggle-edit']");
+    if (editButton) editButton.addEventListener("click", toggleEditMode);
     const addButton = app.querySelector("[data-action='add-exercise']");
     if (addButton) addButton.addEventListener("click", addExercise);
+    const imageButton = app.querySelector("[data-action='open-routine-image-picker']");
+    if (imageButton) {
+      imageButton.addEventListener("click", () => {
+        syncEditFieldsFromDom();
+        routineImagePickerOpen = true;
+        render();
+      });
+    }
+    const closeRoutineImagePicker = () => {
+      syncEditFieldsFromDom();
+      routineImagePickerOpen = false;
+      render();
+    };
+    const backdrop = app.querySelector("[data-routine-image-backdrop]");
+    if (backdrop) {
+      backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) closeRoutineImagePicker();
+      });
+    }
+    const closeButton = app.querySelector("[data-action='close-routine-image-picker']");
+    if (closeButton) closeButton.addEventListener("click", closeRoutineImagePicker);
+    app.querySelectorAll("[data-routine-image]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setRoutineImageId(currentRoutine(), button.dataset.routineImage || "");
+        routineImagePickerOpen = false;
+        saveState();
+        render();
+      });
+    });
     const descriptionInput = app.querySelector("[data-routine-description]");
     if (descriptionInput) {
       descriptionInput.addEventListener("input", () => {
@@ -1463,15 +1494,13 @@
     });
 
     app.querySelector(".routine-page").addEventListener("click", (event) => {
-      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu], [data-action='toggle-routine-actions'], [data-routine-actions-menu], [data-exercise-picker]")) return;
+      if (event.target.closest("[data-action='toggle-exercise-menu'], [data-exercise-menu], [data-exercise-picker]")) return;
       app.querySelectorAll("[data-exercise-menu]").forEach((menu) => {
         menu.hidden = true;
       });
       app.querySelectorAll("[data-exercise-option-menu]").forEach((menu) => {
         menu.hidden = true;
       });
-      const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
-      if (routineActionsMenu) routineActionsMenu.hidden = true;
     });
 
     app.querySelectorAll("[data-action='toggle-pb']").forEach((button) => {
@@ -1603,6 +1632,7 @@
       editSnapshot = {
         rows: clone(currentRows()),
         description: routineDescription(currentRoutine()),
+        image_id: routineImageId(currentRoutine()),
       };
       editMode = true;
     }
@@ -1820,8 +1850,8 @@
     `;
   }
 
-  function renderRoutineImageDialog() {
-    if (!newRoutineImagePickerOpen) return "";
+  function renderRoutineImageDialog(selectedId = newRoutineImageId) {
+    if (!routineImagePickerOpen) return "";
     return `
       <div class="routine-image-backdrop" data-routine-image-backdrop>
         <section class="routine-image-dialog" role="dialog" aria-modal="true" aria-label="Choose routine image">
@@ -1830,7 +1860,7 @@
             <button class="icon-btn card-icon-btn" type="button" data-action="close-routine-image-picker" aria-label="Close image picker" title="Close">${iconSvg("cancel")}</button>
           </div>
           <div class="routine-image-picker in-dialog" data-routine-image-picker>
-            ${renderRoutineImagePicker(newRoutineImageId)}
+            ${renderRoutineImagePicker(selectedId)}
           </div>
         </section>
       </div>
@@ -1877,13 +1907,13 @@
     if (openImagePicker) {
       openImagePicker.addEventListener("click", () => {
         newRoutineNameDraft = input.value;
-        newRoutineImagePickerOpen = true;
+        routineImagePickerOpen = true;
         render();
       });
     }
     const closeImagePicker = () => {
       newRoutineNameDraft = input.value;
-      newRoutineImagePickerOpen = false;
+      routineImagePickerOpen = false;
       render();
     };
     const backdrop = app.querySelector("[data-routine-image-backdrop]");
@@ -1898,7 +1928,7 @@
       button.addEventListener("click", () => {
         newRoutineNameDraft = input.value;
         newRoutineImageId = button.dataset.routineImage || "";
-        newRoutineImagePickerOpen = false;
+        routineImagePickerOpen = false;
         render();
       });
     });
@@ -1921,11 +1951,12 @@
       state.selected_routine = name;
       dataSelection = { kind: "routine", value: name };
       newRoutineNameDraft = "";
-      newRoutineImagePickerOpen = false;
+      routineImagePickerOpen = false;
       editMode = true;
       editSnapshot = {
         rows: clone(state.routines[name]),
         description: routineDescription(name),
+        image_id: routineImageId(name),
       };
       saveState();
       currentPage = "routine";
@@ -2544,18 +2575,14 @@
       const dataMenu = app.querySelector("[data-data-menu]");
       if (dataMenu) dataMenu.hidden = true;
     }
-    if (!event.target.closest(".routine-toolbar")) {
-      const routineActionsMenu = app.querySelector("[data-routine-actions-menu]");
-      if (routineActionsMenu) routineActionsMenu.hidden = true;
-    }
   });
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       const backdrop = document.getElementById("confirm-backdrop");
       if (!backdrop.hidden) document.getElementById("confirm-cancel").click();
-      if (newRoutineImagePickerOpen) {
-        newRoutineImagePickerOpen = false;
+      if (routineImagePickerOpen) {
+        routineImagePickerOpen = false;
         render();
       }
       const dataMenu = app.querySelector("[data-data-menu]");
@@ -2566,7 +2593,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=65", { updateViaCache: "none" })
+        .register("sw.js?v=66", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
