@@ -7,7 +7,8 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.51";
+  const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
+  const APP_VERSION = "1.3.52";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -69,9 +70,11 @@
 
   let authSession = null;
   let state = loadState();
+  const initialOpenRoutine = loadOpenRoutineName(state);
+  if (initialOpenRoutine) state.selected_routine = initialOpenRoutine;
   let cloudWriteTable = SUPABASE_TABLE;
   let currentSessionId = null;
-  let currentPage = "home";
+  let currentPage = initialOpenRoutine ? "routine" : "home";
   let routinesSearchTerm = "";
   let newRoutineNameDraft = "";
   let newRoutineImageId = "";
@@ -394,6 +397,35 @@
     return authSession?.user?.id ? userStorageKey(authSession.user.id) : STORAGE_KEY;
   }
 
+  function loadOpenRoutineName(source = state) {
+    try {
+      const routine = String(localStorage.getItem(OPEN_ROUTINE_KEY) || "").trim();
+      if (routine && source?.routines?.[routine]) return routine;
+      if (routine) localStorage.removeItem(OPEN_ROUTINE_KEY);
+    } catch (_error) {
+      localStorage.removeItem(OPEN_ROUTINE_KEY);
+    }
+    return "";
+  }
+
+  function rememberOpenRoutine(routine = currentRoutine()) {
+    const name = String(routine || "").trim();
+    if (name && state.routines[name]) localStorage.setItem(OPEN_ROUTINE_KEY, name);
+  }
+
+  function clearOpenRoutine() {
+    localStorage.removeItem(OPEN_ROUTINE_KEY);
+    expandedWorkoutExerciseId = "";
+  }
+
+  function restoreOpenRoutinePage() {
+    const routine = loadOpenRoutineName(state);
+    if (!routine) return false;
+    state.selected_routine = routine;
+    currentPage = "routine";
+    return true;
+  }
+
   function loadMigratedState(primaryKey, fallbackKey) {
     const stored = loadStoredState(primaryKey);
     if (stored) return stored;
@@ -438,6 +470,8 @@
 
   function applyLoadedState(nextState) {
     state = normalizeData(nextState);
+    const openRoutine = loadOpenRoutineName(state);
+    if (openRoutine) state.selected_routine = openRoutine;
     currentSessionId = null;
     dataSelection = { kind: "routine", value: state.selected_routine };
     selectedHistory = new Set();
@@ -507,7 +541,7 @@
     localStorage.removeItem(LEGACY_GUEST_MODE_KEY);
     cloudStatus = "Browser storage only";
     applyLoadedState(loadState(STORAGE_KEY));
-    currentPage = "home";
+    if (!restoreOpenRoutinePage()) currentPage = "home";
     render();
     showToast("Guest mode saves to this browser only.");
   }
@@ -666,6 +700,7 @@
       showToast(cloudDatabaseFull ? "Database is full. Saved on this device only." : "Cloud data unavailable.");
     } finally {
       cloudLoadActive = false;
+      restoreOpenRoutinePage();
       render();
     }
   }
@@ -800,6 +835,8 @@
       render();
       return;
     }
+    if (page === "routine") rememberOpenRoutine();
+    if (page === "routines" && currentPage === "routine") clearOpenRoutine();
     if (page === "new" && !canCreateRoutines()) {
       currentPage = "routine";
       closeEditMode(false);
@@ -820,6 +857,18 @@
     if (page !== "routine") expandedWorkoutExerciseId = "";
     selectedHistory = new Set();
     render();
+  }
+
+  function navigateToPage(page) {
+    if (page === "routines" && currentPage !== "routine") {
+      const routine = loadOpenRoutineName(state);
+      if (routine) {
+        state.selected_routine = routine;
+        setPage("routine");
+        return;
+      }
+    }
+    setPage(page);
   }
 
   function renderAppBrandHeader(options = {}) {
@@ -888,12 +937,17 @@
     return `<button class="routine-title-edit" type="button" data-action="toggle-edit" aria-label="Edit routine" title="Edit Routine">${iconSvg("edit")}</button>`;
   }
 
+  function renderRoutineCloseButton() {
+    return `<button class="routine-title-close" type="button" data-action="close-routine" aria-label="Close routine" title="Close Routine">${iconSvg("cancel")}</button>`;
+  }
+
   function renderPageTitle(title) {
     if (currentPage !== "routine") return `<h1>${escapeHtml(title)}</h1>`;
     return `
       <div class="routine-title-row">
         <h1>${escapeHtml(title)}</h1>
         ${renderRoutineEditButton()}
+        ${renderRoutineCloseButton()}
       </div>
     `;
   }
@@ -1207,13 +1261,13 @@
 
   function bindHomePage() {
     app.querySelectorAll("[data-nav]").forEach((button) => {
-      button.addEventListener("click", () => setPage(button.dataset.nav));
+      button.addEventListener("click", () => navigateToPage(button.dataset.nav));
     });
   }
 
   function bindRoutinesPage() {
     app.querySelectorAll("[data-nav]").forEach((button) => {
-      button.addEventListener("click", () => setPage(button.dataset.nav));
+      button.addEventListener("click", () => navigateToPage(button.dataset.nav));
     });
     const search = app.querySelector("[data-routines-search]");
     if (search) {
@@ -1241,7 +1295,7 @@
 
   function bindShell() {
     app.querySelectorAll("[data-nav]").forEach((button) => {
-      button.addEventListener("click", () => setPage(button.dataset.nav));
+      button.addEventListener("click", () => navigateToPage(button.dataset.nav));
     });
   }
 
@@ -1428,6 +1482,8 @@
     app.querySelector("[data-action='save-routine']").addEventListener("click", saveRoutineButton);
     const editButton = app.querySelector("[data-action='toggle-edit']");
     if (editButton) editButton.addEventListener("click", toggleEditMode);
+    const routineCloseButton = app.querySelector("[data-action='close-routine']");
+    if (routineCloseButton) routineCloseButton.addEventListener("click", () => setPage("routines"));
     const addButton = app.querySelector("[data-action='add-exercise']");
     if (addButton) addButton.addEventListener("click", addExercise);
     const imageButton = app.querySelector("[data-action='open-routine-image-picker']");
@@ -1874,6 +1930,7 @@
     const ok = await confirmDialog("Delete routine", `Delete ${routine}?`, "Delete");
     if (!ok) return;
     if (editMode) closeEditMode(true);
+    if (loadOpenRoutineName(state) === routine) clearOpenRoutine();
     delete state.routines[routine];
     state.routine_definitions = state.routine_definitions.map((item) =>
       item.name === routine ? { ...item, active: false } : item
@@ -2029,6 +2086,7 @@
       };
       saveState();
       currentPage = "routine";
+      rememberOpenRoutine(name);
       render();
     };
     create.addEventListener("click", createRoutine);
@@ -2662,7 +2720,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=73", { updateViaCache: "none" })
+        .register("sw.js?v=74", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

@@ -171,7 +171,8 @@ button.is-pressing:not([disabled]) {
   flex: 0 1 auto;
 }
 
-.routine-title-edit {
+.routine-title-edit,
+.routine-title-close {
   width: 31px;
   height: 31px;
   flex: 0 0 auto;
@@ -186,12 +187,20 @@ button.is-pressing:not([disabled]) {
 }
 
 .routine-title-edit:hover,
-.routine-title-edit:focus-visible {
+.routine-title-edit:focus-visible,
+.routine-title-close:hover,
+.routine-title-close:focus-visible {
   color: #24ee87;
   outline: 0;
 }
 
-.routine-title-edit .icon {
+.routine-title-close:hover,
+.routine-title-close:focus-visible {
+  color: #fca5a5;
+}
+
+.routine-title-edit .icon,
+.routine-title-close .icon {
   width: 19px;
   height: 19px;
 }
@@ -2198,7 +2207,8 @@ tr.selected td {
     font-size: calc(1.72rem * var(--ui-text-scale));
   }
 
-  .routine-title-edit {
+  .routine-title-edit,
+  .routine-title-close {
     width: 30px;
     height: 30px;
   }

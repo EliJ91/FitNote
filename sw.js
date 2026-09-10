@@ -1,11 +1,11 @@
-const CACHE_NAME = "fitnote-v73";
+const CACHE_NAME = "fitnote-v74";
 const ASSETS = [
   "./",
   "./index.html",
-  "./styles.css?v=73",
-  "./fitnote-config.js?v=73",
-  "./fitnote-history.js?v=73",
-  "./app.js?v=73",
+  "./styles.css?v=74",
+  "./fitnote-config.js?v=74",
+  "./fitnote-history.js?v=74",
+  "./app.js?v=74",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/fitnote-landing-logo.png",
