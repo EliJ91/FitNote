@@ -8,7 +8,7 @@
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
-  const APP_VERSION = "1.3.52";
+  const APP_VERSION = "1.3.53";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -261,8 +261,8 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path><path d="M3 12H1"></path><path d="m4 7-1-1"></path></svg>',
       notebook:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path><path d="M8 4v16"></path><path d="M11 8h5"></path><path d="M11 12h4"></path></svg>',
-      openBook:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5z"></path></svg>',
+      openNotebook:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H11v17H7.5A2.5 2.5 0 0 0 5 22V5.5z"></path><path d="M19 5.5A2.5 2.5 0 0 0 16.5 3H13v17h3.5A2.5 2.5 0 0 1 19 22V5.5z"></path><path d="M8 7h1.5"></path><path d="M14.5 7H16"></path><path d="M8 11h1.5"></path><path d="M14.5 11H16"></path></svg>',
       settings:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="m4.22 4.22 1.42 1.42"></path><path d="m18.36 18.36 1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="m4.22 19.78 1.42-1.42"></path><path d="m18.36 5.64 1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>',
       play:
@@ -1248,7 +1248,7 @@
 
   function renderBottomNav(activePage) {
     const active = activePage === "routine" || activePage === "new" ? "routines" : activePage;
-    const routinesIcon = activePage === "routine" ? "openBook" : "notebook";
+    const routinesIcon = loadOpenRoutineName(state) ? "openNotebook" : "notebook";
     return `
       <nav class="home-nav" aria-label="Primary navigation">
         <button class="home-nav-item ${active === "home" ? "active" : ""}" type="button" data-nav="home" ${active === "home" ? 'aria-current="page"' : ""}>${iconSvg("home")}<span>Home</span></button>
@@ -2117,7 +2117,7 @@
           <div class="settings-actions">
             <button class="settings-action" type="button" data-nav="home">${iconSvg("home")}<span>Home</span></button>
             <button class="settings-action" type="button" data-nav="routines">${iconSvg("notebook")}<span>Routines</span></button>
-            <button class="settings-action" type="button" data-nav="routine">${iconSvg("openBook")}<span>Workout</span></button>
+            <button class="settings-action" type="button" data-nav="routine">${iconSvg("openNotebook")}<span>Workout</span></button>
             <button class="settings-action" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
             <button class="settings-action" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
           </div>
@@ -2720,7 +2720,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=74", { updateViaCache: "none" })
+        .register("sw.js?v=75", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

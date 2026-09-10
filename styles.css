@@ -173,36 +173,53 @@ button.is-pressing:not([disabled]) {
 
 .routine-title-edit,
 .routine-title-close {
-  width: 31px;
-  height: 31px;
   flex: 0 0 auto;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #d4e3dc;
   display: grid;
   place-items: center;
   padding: 0;
   cursor: pointer;
 }
 
+.routine-title-edit {
+  width: 31px;
+  height: 31px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d4e3dc;
+}
+
+.routine-title-close {
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(252, 165, 165, 0.42);
+  border-radius: 999px;
+  background: rgba(127, 29, 29, 0.2);
+  color: #fecaca;
+}
+
 .routine-title-edit:hover,
-.routine-title-edit:focus-visible,
-.routine-title-close:hover,
-.routine-title-close:focus-visible {
+.routine-title-edit:focus-visible {
   color: #24ee87;
   outline: 0;
 }
 
 .routine-title-close:hover,
 .routine-title-close:focus-visible {
-  color: #fca5a5;
+  background: rgba(127, 29, 29, 0.34);
+  color: #ffffff;
+  outline: 0;
 }
 
-.routine-title-edit .icon,
-.routine-title-close .icon {
+.routine-title-edit .icon {
   width: 19px;
   height: 19px;
+}
+
+.routine-title-close .icon {
+  width: 20px;
+  height: 20px;
 }
 
 .icon-btn {
