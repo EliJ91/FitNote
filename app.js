@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.49";
+  const APP_VERSION = "1.3.50";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -256,6 +256,10 @@
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>',
       history:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path><path d="M3 12H1"></path><path d="m4 7-1-1"></path></svg>',
+      notebook:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path><path d="M8 4v16"></path><path d="M11 8h5"></path><path d="M11 12h4"></path></svg>',
+      openBook:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v17H6.5A2.5 2.5 0 0 0 4 22V5.5z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v17h4.5A2.5 2.5 0 0 1 20 22V5.5z"></path></svg>',
       settings:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="m4.22 4.22 1.42 1.42"></path><path d="m18.36 18.36 1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="m4.22 19.78 1.42-1.42"></path><path d="m18.36 5.64 1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>',
       play:
@@ -1190,10 +1194,11 @@
 
   function renderBottomNav(activePage) {
     const active = activePage === "routine" || activePage === "new" ? "routines" : activePage;
+    const routinesIcon = activePage === "routine" ? "openBook" : "notebook";
     return `
       <nav class="home-nav" aria-label="Primary navigation">
         <button class="home-nav-item ${active === "home" ? "active" : ""}" type="button" data-nav="home" ${active === "home" ? 'aria-current="page"' : ""}>${iconSvg("home")}<span>Home</span></button>
-        <button class="home-nav-item ${active === "routines" ? "active" : ""}" type="button" data-nav="routines" ${active === "routines" ? 'aria-current="page"' : ""}>${iconSvg("play")}<span>Routines</span></button>
+        <button class="home-nav-item ${active === "routines" ? "active" : ""}" type="button" data-nav="routines" ${active === "routines" ? 'aria-current="page"' : ""}>${iconSvg(routinesIcon)}<span>Routines</span></button>
         <button class="home-nav-item ${active === "data" ? "active" : ""}" type="button" data-nav="data" ${active === "data" ? 'aria-current="page"' : ""}>${iconSvg("bars")}<span>Progress</span></button>
         <button class="home-nav-item ${active === "settings" ? "active" : ""}" type="button" data-nav="settings" ${active === "settings" ? 'aria-current="page"' : ""}>${iconSvg("settings")}<span>Settings</span></button>
       </nav>
@@ -2657,7 +2662,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=71", { updateViaCache: "none" })
+        .register("sw.js?v=72", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
