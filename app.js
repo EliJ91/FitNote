@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.48";
+  const APP_VERSION = "1.3.49";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -1067,15 +1067,15 @@
   function routineLastCompletedLabel(name) {
     const session = historySessions().find((item) => item.routine_name === name);
     const date = session ? String(session.completed_at || session.started_at || "").slice(0, 10) : "";
-    if (!date) return "Never done";
+    if (!date) return "Never";
     const today = new Date(`${TODAY}T12:00:00`);
     const previous = new Date(`${date}T12:00:00`);
     const days = Math.max(0, Math.floor((today - previous) / 86400000));
-    if (days === 0) return "Done today";
-    if (days === 1) return "Done yesterday";
-    if (days < 7) return `Done ${days} days ago`;
+    if (days === 0) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 7) return `${days} days ago`;
     const weeks = Math.max(1, Math.round(days / 7));
-    return `Done ${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
+    return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
   }
 
   function filteredRoutineNames() {
@@ -1349,7 +1349,7 @@
     const setCount = sets.length;
     return `
       <div class="collapsed-set-summary full-row" aria-label="Exercise summary">
-        <strong>${escapeHtml(maxWeight)}</strong>
+        <span>${escapeHtml(maxWeight)}</span>
         <span>${escapeHtml(`${setCount} ${setCount === 1 ? "set" : "sets"}`)}</span>
       </div>
     `;
@@ -2657,7 +2657,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=70", { updateViaCache: "none" })
+        .register("sw.js?v=71", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

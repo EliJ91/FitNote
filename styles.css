@@ -1115,8 +1115,8 @@ button.is-pressing:not([disabled]) {
   margin: 0;
   min-width: 0;
   color: var(--text);
-  font-size: calc(1.42rem * var(--ui-text-scale));
-  font-weight: 850;
+  font-size: calc(1.18rem * var(--ui-text-scale));
+  font-weight: 800;
   line-height: 1.14;
   overflow-wrap: anywhere;
 }
@@ -1245,14 +1245,6 @@ button.is-pressing:not([disabled]) {
   border-top: 1px solid var(--line-soft);
   color: var(--muted);
   font-size: calc(0.92rem * var(--ui-text-scale));
-}
-
-.collapsed-set-summary strong {
-  min-width: 0;
-  color: var(--text);
-  font-size: inherit;
-  font-weight: 850;
-  overflow-wrap: anywhere;
 }
 
 .set-grid {
@@ -2216,7 +2208,7 @@ tr.selected td {
   }
 
   .exercise-title {
-    font-size: calc(1.24rem * var(--ui-text-scale));
+    font-size: calc(1.06rem * var(--ui-text-scale));
   }
 
   .set-grid {
