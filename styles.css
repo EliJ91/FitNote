@@ -736,6 +736,14 @@ button.is-pressing:not([disabled]) {
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
 }
 
+.routine-card-tile.has-unsaved-workout {
+  border-color: rgba(250, 204, 21, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(250, 204, 21, 0.36),
+    0 0 18px rgba(250, 204, 21, 0.16),
+    0 10px 22px rgba(0, 0, 0, 0.22);
+}
+
 .routine-card-art {
   width: 42px;
   height: 46px;

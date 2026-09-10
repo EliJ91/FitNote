@@ -8,7 +8,7 @@
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
-  const APP_VERSION = "1.3.53";
+  const APP_VERSION = "1.3.54";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -262,7 +262,7 @@
       notebook:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h11a2 2 0 0 1 2 2v14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path><path d="M8 4v16"></path><path d="M11 8h5"></path><path d="M11 12h4"></path></svg>',
       openNotebook:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5A2.5 2.5 0 0 1 7.5 3H11v17H7.5A2.5 2.5 0 0 0 5 22V5.5z"></path><path d="M19 5.5A2.5 2.5 0 0 0 16.5 3H13v17h3.5A2.5 2.5 0 0 1 19 22V5.5z"></path><path d="M8 7h1.5"></path><path d="M14.5 7H16"></path><path d="M8 11h1.5"></path><path d="M14.5 11H16"></path></svg>',
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5A2.5 2.5 0 0 1 6 3h5.5v17H6a2.5 2.5 0 0 0-2.5 2V5.5z"></path><path d="M20.5 5.5A2.5 2.5 0 0 0 18 3h-5.5v17H18a2.5 2.5 0 0 1 2.5 2V5.5z"></path><path d="M11.5 20c-1.5-1-3.2-1.5-5.5-1.5"></path><path d="M12.5 20c1.5-1 3.2-1.5 5.5-1.5"></path></svg>',
       settings:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v2"></path><path d="M12 19v2"></path><path d="m4.22 4.22 1.42 1.42"></path><path d="m18.36 18.36 1.42 1.42"></path><path d="M3 12h2"></path><path d="M19 12h2"></path><path d="m4.22 19.78 1.42-1.42"></path><path d="m18.36 5.64 1.42-1.42"></path><circle cx="12" cy="12" r="4"></circle></svg>',
       play:
@@ -1136,6 +1136,21 @@
     return `${weeks} ${weeks === 1 ? "week" : "weeks"} ago`;
   }
 
+  function routineHasUnsavedDoneSet(name) {
+    const openSessionIds = new Set(
+      (state.workout_sessions || [])
+        .filter((session) => session.routine_name === name && session.status !== "completed")
+        .map((session) => session.id)
+    );
+    if (!openSessionIds.size) return false;
+    const openExerciseIds = new Set(
+      (state.workout_exercises || [])
+        .filter((exercise) => openSessionIds.has(exercise.workout_session_id))
+        .map((exercise) => exercise.id)
+    );
+    return (state.workout_sets || []).some((set) => openExerciseIds.has(set.workout_exercise_id) && boolFromData(set.completed));
+  }
+
   function filteredRoutineNames() {
     const query = routinesSearchTerm.trim().toLocaleLowerCase();
     return routineNames().filter((name) => !query || `${name} ${routineDescription(name)}`.toLocaleLowerCase().includes(query));
@@ -1173,8 +1188,9 @@
 
   function renderRoutineLandingCard(name) {
     const imageId = routineImageId(name);
+    const hasUnsavedDoneSet = routineHasUnsavedDoneSet(name);
     return `
-      <button class="routine-card-tile" type="button" data-routine-start="${escapeAttr(name)}">
+      <button class="routine-card-tile ${hasUnsavedDoneSet ? "has-unsaved-workout" : ""}" type="button" data-routine-start="${escapeAttr(name)}">
         <span class="routine-card-art" aria-hidden="true"><img src="${escapeAttr(routineImagePath(imageId))}" alt=""></span>
         <span class="routine-card-copy">
           <strong>${escapeHtml(name)}</strong>
@@ -2720,7 +2736,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=75", { updateViaCache: "none" })
+        .register("sw.js?v=76", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
