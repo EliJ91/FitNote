@@ -1121,6 +1121,37 @@ button.is-pressing:not([disabled]) {
   overflow-wrap: anywhere;
 }
 
+.exercise-title-button {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.exercise-title-button:focus-visible {
+  outline: 2px solid rgba(38, 231, 130, 0.62);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.workout-card.collapsed {
+  gap: 10px;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  cursor: pointer;
+}
+
+.workout-card.collapsed .card-title-row {
+  align-items: center;
+}
+
 .mini-actions {
   display: flex;
   align-items: center;
@@ -1201,6 +1232,30 @@ button.is-pressing:not([disabled]) {
 .exercise-menu {
   top: 62px;
   right: 14px;
+}
+
+.collapsed-set-summary {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) minmax(0, 1fr) max-content;
+  gap: 8px;
+  align-items: center;
+  padding-top: 9px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--muted);
+  font-size: calc(0.8rem * var(--ui-text-scale));
+}
+
+.collapsed-set-summary strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: calc(0.94rem * var(--ui-text-scale));
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.collapsed-set-summary .complete {
+  color: var(--accent);
 }
 
 .set-grid {

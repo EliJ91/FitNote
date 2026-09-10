@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.45";
+  const APP_VERSION = "1.3.46";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -76,6 +76,7 @@
   let newRoutineNameDraft = "";
   let newRoutineImageId = "";
   let routineImagePickerOpen = false;
+  let expandedWorkoutExerciseId = "";
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
@@ -808,9 +809,11 @@
       newRoutineImageId = "";
       routineImagePickerOpen = false;
     }
+    if (page === "routine" && currentPage !== "routine") expandedWorkoutExerciseId = "";
     if (page !== "new" && page !== "routine") routineImagePickerOpen = false;
     currentPage = page;
     if (page !== "routine") closeEditMode(false);
+    if (page !== "routine") expandedWorkoutExerciseId = "";
     selectedHistory = new Set();
     render();
   }
@@ -1339,13 +1342,43 @@
     `;
   }
 
-  function renderWorkoutExerciseCard(row, index) {
+  function renderCollapsedSetSummary(row) {
+    const firstSet = row.sets[0] || {};
+    const weight = String(firstSet.weight ?? "").trim();
+    const reps = String(firstSet.reps ?? "").trim();
+    const completed = boolFromData(firstSet.completed);
     return `
-      <article class="exercise-card workout-card" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">
+      <div class="collapsed-set-summary full-row" aria-label="First set">
+        <span>Set 1</span>
+        <strong>${escapeHtml(weight ? `${weight} lb` : "- lb")}</strong>
+        <strong>${escapeHtml(reps ? `${reps} reps` : "- reps")}</strong>
+        <span class="${completed ? "complete" : ""}">${completed ? "Done" : "Not done"}</span>
+      </div>
+    `;
+  }
+
+  function renderExerciseTitleButton(row, isExpanded) {
+    return `
+      <h2 class="exercise-title">
+        <button class="exercise-title-button" type="button" data-action="toggle-exercise-collapse" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}" aria-expanded="${isExpanded ? "true" : "false"}">
+          ${escapeHtml(row.exercise)}
+        </button>
+      </h2>
+    `;
+  }
+
+  function renderWorkoutExerciseCard(row, index) {
+    const isExpanded = expandedWorkoutExerciseId === row.workout_exercise_id;
+    return `
+      <article class="exercise-card workout-card ${isExpanded ? "expanded" : "collapsed"}" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">
         <div class="card-title-row">
-          <h2 class="exercise-title">${escapeHtml(row.exercise)}</h2>
+          ${renderExerciseTitleButton(row, isExpanded)}
           <div class="mini-actions">
-            <button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">PB</button>
+            ${
+              isExpanded
+                ? `<button class="pb-btn ${row.track_pb ? "active" : ""}" type="button" data-action="toggle-pb" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">PB</button>`
+                : ""
+            }
             <button class="icon-btn more-btn" type="button" data-action="toggle-exercise-menu" aria-label="Exercise actions" title="Exercise Actions">${iconSvg("more")}</button>
           </div>
           <div class="exercise-menu" data-exercise-menu hidden>
@@ -1354,15 +1387,19 @@
             <button class="card-menu-item danger" type="button" data-action="delete-workout-exercise" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">Delete Exercise</button>
           </div>
         </div>
-        <div class="set-grid full-row">
-          <div class="set-head">Set</div>
-          <div class="set-head">Weight (lb)</div>
-          <div class="set-head">Reps</div>
-          <div class="set-head">Done</div>
-          <div class="set-head"></div>
-          ${row.sets.map((set) => renderSetRow(set)).join("")}
-        </div>
-        <button class="btn btn-secondary add-set-btn full-row" type="button" data-action="add-set" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">${iconSvg("plus")}<span>Add Set</span></button>
+        ${
+          isExpanded
+            ? `<div class="set-grid full-row">
+                <div class="set-head">Set</div>
+                <div class="set-head">Weight (lb)</div>
+                <div class="set-head">Reps</div>
+                <div class="set-head">Done</div>
+                <div class="set-head"></div>
+                ${row.sets.map((set) => renderSetRow(set)).join("")}
+              </div>
+              <button class="btn btn-secondary add-set-btn full-row" type="button" data-action="add-set" data-workout-exercise-id="${escapeAttr(row.workout_exercise_id)}">${iconSvg("plus")}<span>Add Set</span></button>`
+            : renderCollapsedSetSummary(row)
+        }
       </article>
     `;
   }
@@ -1490,6 +1527,34 @@
           if (otherMenu !== menu) otherMenu.hidden = true;
         });
         menu.hidden = !menu.hidden;
+      });
+    });
+
+    app.querySelectorAll("[data-action='toggle-exercise-collapse']").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const id = button.dataset.workoutExerciseId || "";
+        expandedWorkoutExerciseId = expandedWorkoutExerciseId === id ? "" : id;
+        app.querySelectorAll("[data-exercise-menu]").forEach((menu) => {
+          menu.hidden = true;
+        });
+        render();
+      });
+    });
+
+    app.querySelectorAll(".workout-card").forEach((card) => {
+      card.addEventListener("click", (event) => {
+        if (
+          event.target.closest(
+            "[data-action='toggle-exercise-menu'], [data-action='toggle-exercise-collapse'], [data-exercise-menu]"
+          )
+        ) {
+          return;
+        }
+        const id = card.dataset.workoutExerciseId || "";
+        if (!id || expandedWorkoutExerciseId === id) return;
+        expandedWorkoutExerciseId = id;
+        render();
       });
     });
 
@@ -1782,6 +1847,7 @@
       const ok = await confirmDialog("Delete exercise", `Delete ${row.exercise_name}?`, "Delete");
       if (!ok) return;
       workoutHistory.deleteWorkoutExercise(state, index);
+      if (expandedWorkoutExerciseId === index) expandedWorkoutExerciseId = "";
       saveState();
       render();
       return;
@@ -2593,7 +2659,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=67", { updateViaCache: "none" })
+        .register("sw.js?v=68", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
