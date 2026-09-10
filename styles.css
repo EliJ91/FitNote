@@ -1250,7 +1250,7 @@ button.is-pressing:not([disabled]) {
 .collapsed-set-summary strong {
   min-width: 0;
   color: var(--text);
-  font-size: calc(1.16rem * var(--ui-text-scale));
+  font-size: inherit;
   font-weight: 850;
   overflow-wrap: anywhere;
 }

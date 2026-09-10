@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.47";
+  const APP_VERSION = "1.3.48";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -1345,7 +1345,7 @@
   function renderCollapsedSetSummary(row) {
     const sets = row.sets || [];
     const weights = sets.map((set) => Number(set.weight)).filter((weight) => Number.isFinite(weight));
-    const maxWeight = weights.length ? `Max ${formatWeight(Math.max(...weights))} lb` : "Max - lb";
+    const maxWeight = weights.length ? `${formatWeight(Math.max(...weights))} lb` : "- lb";
     const setCount = sets.length;
     return `
       <div class="collapsed-set-summary full-row" aria-label="Exercise summary">
@@ -2657,7 +2657,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=69", { updateViaCache: "none" })
+        .register("sw.js?v=70", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
