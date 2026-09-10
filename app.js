@@ -7,7 +7,7 @@
   const LEGACY_USER_STORAGE_PREFIX = `${LEGACY_STORAGE_KEY}.user.`;
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
-  const APP_VERSION = "1.3.50";
+  const APP_VERSION = "1.3.51";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -2058,8 +2058,8 @@
           <p class="section-label">Navigate</p>
           <div class="settings-actions">
             <button class="settings-action" type="button" data-nav="home">${iconSvg("home")}<span>Home</span></button>
-            <button class="settings-action" type="button" data-nav="routines">${iconSvg("play")}<span>Routines</span></button>
-            <button class="settings-action" type="button" data-nav="routine">${iconSvg("play")}<span>Workout</span></button>
+            <button class="settings-action" type="button" data-nav="routines">${iconSvg("notebook")}<span>Routines</span></button>
+            <button class="settings-action" type="button" data-nav="routine">${iconSvg("openBook")}<span>Workout</span></button>
             <button class="settings-action" type="button" data-nav="history">${iconSvg("history")}<span>History</span></button>
             <button class="settings-action" type="button" data-nav="data">${iconSvg("bars")}<span>Progress</span></button>
           </div>
@@ -2662,7 +2662,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=72", { updateViaCache: "none" })
+        .register("sw.js?v=73", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
