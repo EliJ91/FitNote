@@ -8,12 +8,12 @@
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
-  const APP_VERSION = "1.3.54";
+  const APP_VERSION = "1.3.55";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
-  const AUTH_CHECK_TIMEOUT_MS = 1200;
-  const CLOUD_REQUEST_TIMEOUT_MS = 5000;
+  const AUTH_CHECK_TIMEOUT_MS = 10000;
+  const CLOUD_REQUEST_TIMEOUT_MS = 15000;
 
   const INITIAL_DATA = {
     settings: { text_size: "normal", routine_columns: "two" },
@@ -136,13 +136,8 @@
     return false;
   }
 
-  function clearSupabaseAuthStorage() {
-    if (supabaseStorageKey) localStorage.removeItem(supabaseStorageKey);
-  }
-
   function resetCloudClient() {
     supabaseClient = null;
-    clearSupabaseAuthStorage();
   }
 
   function withTimeout(promise, ms, message) {
@@ -163,7 +158,7 @@
         headers: { apikey: cloudConfig.anonKey },
         signal: controller.signal,
       });
-      return response.ok || (response.status > 0 && response.status < 500);
+      return response.ok;
     } catch (_error) {
       return false;
     } finally {
@@ -173,15 +168,13 @@
 
   function markCloudUnavailable() {
     cloudUnavailable = true;
-    authSession = null;
     authReady = true;
     cloudStatus = "Cloud unavailable";
-    clearSupabaseAuthStorage();
     window.clearTimeout(cloudSaveTimer);
   }
 
   async function prepareCloudClient({ force = false, timeoutMs = AUTH_CHECK_TIMEOUT_MS } = {}) {
-    if (supabaseClient) return supabaseClient;
+    if (supabaseClient && !cloudUnavailable) return supabaseClient;
     if (!canAttemptCloud) return null;
     if (cloudUnavailable && !force) return null;
     cloudUnavailable = false;
@@ -191,6 +184,7 @@
       markCloudUnavailable();
       return null;
     }
+    if (supabaseClient) return supabaseClient;
     try {
       supabaseClient = window.supabase.createClient(cloudConfig.url, cloudConfig.anonKey, {
         auth: {
@@ -503,8 +497,7 @@
   }
 
   async function signInWithGoogle() {
-    resetCloudClient();
-    const client = await prepareCloudClient({ force: true, timeoutMs: 2200 });
+    const client = await prepareCloudClient({ force: true });
     if (!client) {
       render();
       showToast(canAttemptCloud ? "Google sign in is unavailable right now." : "Cloud sync is not configured.");
@@ -527,7 +520,7 @@
       cloudStatus = "Sign in failed";
     } catch (_error) {
       resetCloudClient();
-      cloudStatus = (await isCloudReachable(2200)) ? "Browser storage only" : "Cloud unavailable";
+      cloudStatus = (await isCloudReachable()) ? "Browser storage only" : "Cloud unavailable";
       cloudUnavailable = cloudStatus === "Cloud unavailable";
     } finally {
       render();
@@ -554,7 +547,7 @@
   }
 
   function cloudMenu() {
-    if (!canAttemptCloud || cloudUnavailable) {
+    if (!canAttemptCloud) {
       return '<button class="menu-item menu-status" type="button" disabled>Cloud sync unavailable</button>';
     }
     if (!authSession) {
@@ -756,7 +749,7 @@
       resetCloudClient();
       authSession = null;
       authReady = true;
-      cloudStatus = (await isCloudReachable(2200)) ? "Browser storage only" : "Cloud unavailable";
+      cloudStatus = (await isCloudReachable()) ? "Browser storage only" : "Cloud unavailable";
       cloudUnavailable = cloudStatus === "Cloud unavailable";
       render();
     }
@@ -986,10 +979,10 @@
         <section class="auth-panel">
           <img class="auth-logo" src="icons/fitnote-landing-logo.png" alt="FitNote">
         <div class="auth-actions">
-          <button class="btn btn-primary auth-btn" type="button" data-action="sign-in-google" ${cloudUnavailable ? "disabled" : ""}><span class="auth-btn-icon auth-google-mark">G</span><span>Sign in with Google</span>${iconSvg("chevronRight")}</button>
+          <button class="btn btn-primary auth-btn" type="button" data-action="sign-in-google" ${!canAttemptCloud ? "disabled" : ""}><span class="auth-btn-icon auth-google-mark">G</span><span>Sign in with Google</span>${iconSvg("chevronRight")}</button>
           <button class="btn btn-secondary auth-btn" type="button" data-action="guest-sign-in"><span class="auth-btn-icon">${iconSvg("user")}</span><span>Continue as Guest</span>${iconSvg("chevronRight")}</button>
         </div>
-        <p class="auth-copy">${cloudUnavailable ? "Cloud sign in is unavailable. Guest mode still works." : "Cloud storage requires Google sign in."}</p>
+        <p class="auth-copy">${cloudUnavailable ? "Cloud connection unavailable. Try signing in again." : "Cloud storage requires Google sign in."}</p>
         <p class="auth-version">Version ${escapeHtml(APP_VERSION)}</p>
       </section>
     `);
@@ -2736,7 +2729,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=76", { updateViaCache: "none" })
+        .register("sw.js?v=77", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
