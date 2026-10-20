@@ -8,7 +8,8 @@
   const GUEST_MODE_KEY = `${STORAGE_KEY}.guestMode`;
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
-  const APP_VERSION = "1.3.55";
+  const OPEN_WORKOUT_KEY = `${STORAGE_KEY}.openWorkout`;
+  const APP_VERSION = "1.3.56";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -73,9 +74,10 @@
   const initialOpenRoutine = loadOpenRoutineName(state);
   if (initialOpenRoutine) state.selected_routine = initialOpenRoutine;
   let cloudWriteTable = SUPABASE_TABLE;
-  let currentSessionId = null;
+  let currentSessionId = localStorage.getItem(OPEN_WORKOUT_KEY) || null;
   let currentPage = initialOpenRoutine ? "routine" : "home";
   let routinesSearchTerm = "";
+  let selectedTemplateName = "";
   let newRoutineNameDraft = "";
   let newRoutineImageId = "";
   let routineImagePickerOpen = false;
@@ -395,20 +397,23 @@
     try {
       const routine = String(localStorage.getItem(OPEN_ROUTINE_KEY) || "").trim();
       if (routine && source?.routines?.[routine]) return routine;
-      if (routine) localStorage.removeItem(OPEN_ROUTINE_KEY);
     } catch (_error) {
-      localStorage.removeItem(OPEN_ROUTINE_KEY);
+      return "";
     }
     return "";
   }
 
   function rememberOpenRoutine(routine = currentRoutine()) {
     const name = String(routine || "").trim();
-    if (name && state.routines[name]) localStorage.setItem(OPEN_ROUTINE_KEY, name);
+    if (name && state.routines[name]) {
+      localStorage.setItem(OPEN_ROUTINE_KEY, name);
+      if (currentSessionId) localStorage.setItem(OPEN_WORKOUT_KEY, currentSessionId);
+    }
   }
 
   function clearOpenRoutine() {
     localStorage.removeItem(OPEN_ROUTINE_KEY);
+    localStorage.removeItem(OPEN_WORKOUT_KEY);
     expandedWorkoutExerciseId = "";
   }
 
@@ -416,6 +421,7 @@
     const routine = loadOpenRoutineName(state);
     if (!routine) return false;
     state.selected_routine = routine;
+    currentSessionId = localStorage.getItem(OPEN_WORKOUT_KEY) || null;
     currentPage = "routine";
     return true;
   }
@@ -784,17 +790,45 @@
   function currentWorkoutSession() {
     if (editMode) return null;
     const routine = currentRoutine();
-    const existing =
-      currentSessionId && state.workout_sessions.find((session) => session.id === currentSessionId && session.routine_name === routine);
-    if (existing && String(existing.started_at || existing.completed_at || "").slice(0, 10) === TODAY) {
-      if (workoutHistory.syncWorkoutSessionWithRoutine(state, existing.id, { includeCompleted: true })) saveState();
-      return existing;
+    const sessionId = currentSessionId || localStorage.getItem(OPEN_WORKOUT_KEY);
+    const existing = state.workout_sessions.find((session) => session.id === sessionId && session.routine_name === routine && session.status !== "completed");
+    // Resolve open workouts saved by older app versions without creating a session.
+    const session = existing || (loadOpenRoutineName(state) === routine
+      ? unfinishedWorkout(routine)
+      : null);
+    if (session) {
+      currentSessionId = session.id;
+      rememberOpenRoutine(routine);
     }
-    const session = workoutHistory.startWorkoutSession(state, routine, { today: TODAY });
+    return session || null;
+  }
+
+  function unfinishedWorkout(routine) {
+    return state.workout_sessions
+      .filter((session) => session.routine_name === routine && session.status !== "completed")
+      .sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0] || null;
+  }
+
+  function openWorkout(session) {
+    closeEditMode(false);
+    state.selected_routine = session.routine_name;
     currentSessionId = session.id;
-    if (workoutHistory.syncWorkoutSessionWithRoutine(state, session.id, { includeCompleted: true })) saveState();
+    selectedTemplateName = "";
     saveState();
-    return session;
+    setPage("routine");
+  }
+
+  function startSelectedWorkout() {
+    const name = selectedTemplateName;
+    if (!name || !state.routines[name]) return;
+    if (!state.routines[name].length || state.routines[name].some((row) =>
+      !row.exercise || !isValidWeight(row.weight) || !workoutHistory.parseSetScheme(row.reps)[0].reps.trim()
+    )) {
+      showToast("Finish the routine template before starting a workout.");
+      return;
+    }
+    const session = workoutHistory.startWorkoutSession(state, name);
+    openWorkout(session);
   }
 
   function currentWorkoutRows() {
@@ -828,8 +862,9 @@
       render();
       return;
     }
-    if (page === "routine") rememberOpenRoutine();
-    if (page === "routines" && currentPage === "routine") clearOpenRoutine();
+    if (page === "routine" && !editMode) rememberOpenRoutine();
+    if (page === "routines" && currentPage === "routine" && !editMode) clearOpenRoutine();
+    selectedTemplateName = "";
     if (page === "new" && !canCreateRoutines()) {
       currentPage = "routine";
       closeEditMode(false);
@@ -925,11 +960,6 @@
     editSnapshot = null;
   }
 
-  function renderRoutineEditButton() {
-    if (editMode) return "";
-    return `<button class="routine-title-edit" type="button" data-action="toggle-edit" aria-label="Edit routine" title="Edit Routine">${iconSvg("edit")}</button>`;
-  }
-
   function renderRoutineCloseButton() {
     return `<button class="routine-title-close" type="button" data-action="close-routine" aria-label="Close routine" title="Close Routine">${iconSvg("cancel")}</button>`;
   }
@@ -939,7 +969,6 @@
     return `
       <div class="routine-title-row">
         <h1>${escapeHtml(title)}</h1>
-        ${renderRoutineEditButton()}
         ${renderRoutineCloseButton()}
       </div>
     `;
@@ -995,6 +1024,10 @@
       app.innerHTML = renderAuthGate();
       bindAuthGate();
       return;
+    }
+    if (currentPage === "routine" && !editMode && !currentWorkoutSession()) {
+      clearOpenRoutine();
+      currentPage = "routines";
     }
     if (currentPage === "home") {
       app.innerHTML = renderHomePage();
@@ -1174,6 +1207,7 @@
             }
           </div>
         </div>
+        ${renderTemplateStartDialog()}
         ${renderBottomNav("routines")}
       </section>
     `;
@@ -1197,6 +1231,34 @@
           </span>
         </span>
       </button>
+    `;
+  }
+
+  function renderTemplateStartDialog() {
+    const name = selectedTemplateName;
+    if (!name || !state.routines[name]) return "";
+    const draft = unfinishedWorkout(name);
+    return `
+      <div class="template-start-backdrop" data-template-start-backdrop>
+        <section class="template-start-dialog" role="dialog" aria-modal="true" aria-labelledby="template-start-title">
+          <header class="template-start-header">
+            <img src="${escapeAttr(routineImagePath(routineImageId(name)))}" alt="">
+            <div><h2 id="template-start-title">${escapeHtml(name)}</h2><p>${escapeHtml(routineDescription(name))}</p></div>
+            <button class="routine-title-edit" type="button" data-action="edit-template" aria-label="Edit routine template" title="Edit Template">${iconSvg("edit")}</button>
+            <button class="icon-btn" type="button" data-action="close-template-start" aria-label="Close routine preview" title="Close">${iconSvg("cancel")}</button>
+          </header>
+          <ul class="template-exercise-preview">
+            ${state.routines[name].filter((row) => row.exercise).map((row) => {
+              const sets = workoutHistory.parseSetScheme(row.reps);
+              return `<li><strong>${escapeHtml(row.exercise)}</strong><span>${sets.length} ${sets.length === 1 ? "set" : "sets"} · ${escapeHtml(sets[0].reps)} reps · ${escapeHtml(formatWeight(row.weight))} lb</span></li>`;
+            }).join("")}
+          </ul>
+          <div class="template-start-actions">
+            <button class="btn btn-primary" type="button" data-action="start-template-workout">${iconSvg("play")}<span>Start Workout</span></button>
+            ${draft ? `<button class="btn btn-secondary" type="button" data-action="resume-template-workout">${iconSvg("openNotebook")}<span>Resume Workout</span></button>` : ""}
+          </div>
+        </section>
+      </div>
     `;
   }
 
@@ -1294,11 +1356,30 @@
       button.addEventListener("click", () => {
         const routine = button.dataset.routineStart;
         if (!routine || !state.routines[routine]) return;
-        state.selected_routine = routine;
-        currentSessionId = null;
-        saveState();
-        setPage("routine");
+        selectedTemplateName = routine;
+        render();
+        app.querySelector("[data-action='start-template-workout']")?.focus();
       });
+    });
+    const closePreview = () => {
+      const name = selectedTemplateName;
+      selectedTemplateName = "";
+      render();
+      Array.from(app.querySelectorAll("[data-routine-start]")).find((button) => button.dataset.routineStart === name)?.focus();
+    };
+    app.querySelector("[data-action='close-template-start']")?.addEventListener("click", closePreview);
+    app.querySelector("[data-template-start-backdrop]")?.addEventListener("click", (event) => {
+      if (event.target.matches("[data-template-start-backdrop]")) closePreview();
+    });
+    app.querySelector("[data-action='start-template-workout']")?.addEventListener("click", startSelectedWorkout);
+    app.querySelector("[data-action='resume-template-workout']")?.addEventListener("click", () => {
+      const session = unfinishedWorkout(selectedTemplateName);
+      if (session) openWorkout(session);
+    });
+    app.querySelector("[data-action='edit-template']")?.addEventListener("click", () => {
+      state.selected_routine = selectedTemplateName;
+      selectedTemplateName = "";
+      toggleEditMode();
     });
   }
 
@@ -1334,7 +1415,6 @@
 
   function renderRoutinePage() {
     const rows = editMode ? currentRows() : currentWorkoutRows();
-    const session = editMode ? null : currentWorkoutSession();
     const routine = currentRoutine();
     return `
       <section class="routine-page">
@@ -1345,7 +1425,7 @@
         </div>
         <div class="bottom-actions">
           ${editMode ? `<button class="btn btn-secondary action-add" type="button" data-action="add-exercise">${iconSvg("plusCircle")}<span>Add Exercise</span></button>` : ""}
-          <button class="btn btn-primary complete-btn" type="button" data-action="save-routine">${iconSvg(editMode ? "check" : "checkCircle")}<span>${editMode ? "Save Changes" : session?.status === "completed" ? "Update Workout" : "Complete Workout"}</span></button>
+          <button class="btn btn-primary complete-btn" type="button" data-action="save-routine">${iconSvg(editMode ? "check" : "checkCircle")}<span>${editMode ? "Save Template" : "Complete Workout"}</span></button>
         </div>
         <div class="scroll-float" data-scroll-float></div>
       </section>
@@ -1379,6 +1459,7 @@
   function renderExerciseCard(row, index) {
     if (!editMode) return renderWorkoutExerciseCard(row, index);
     const exerciseOptions = existingExerciseOptions();
+    const templateSets = workoutHistory.parseSetScheme(row.reps);
     return `
       <article class="exercise-card template-card" data-index="${index}">
         <div class="card-title-row">
@@ -1402,9 +1483,11 @@
         </div>
         <div class="template-grid full-row">
           <div class="field-label">Weight (lb)</div>
+          <div class="field-label">Sets</div>
           <div class="field-label">Reps</div>
           <input class="text-input template-input" inputmode="decimal" data-field="weight" data-index="${index}" value="${escapeAttr(row.weight)}" aria-label="Template weight">
-          <input class="text-input template-input" data-field="reps" data-index="${index}" value="${escapeAttr(row.reps)}" aria-label="Template reps">
+          <input class="text-input template-input" type="number" min="1" max="100" inputmode="numeric" data-field="set_count" data-index="${index}" value="${templateSets.length}" aria-label="Template sets">
+          <input class="text-input template-input" data-field="reps" data-index="${index}" value="${escapeAttr(templateSets[0].reps)}" aria-label="Template reps">
         </div>
       </article>
     `;
@@ -1489,10 +1572,19 @@
 
   function bindRoutinePage() {
     app.querySelector("[data-action='save-routine']").addEventListener("click", saveRoutineButton);
-    const editButton = app.querySelector("[data-action='toggle-edit']");
-    if (editButton) editButton.addEventListener("click", toggleEditMode);
     const routineCloseButton = app.querySelector("[data-action='close-routine']");
-    if (routineCloseButton) routineCloseButton.addEventListener("click", () => setPage("routines"));
+    if (routineCloseButton) routineCloseButton.addEventListener("click", () => {
+      const wasEditing = editMode;
+      const openRoutine = loadOpenRoutineName(state);
+      if (wasEditing) {
+        closeEditMode(false);
+        if (openRoutine) state.selected_routine = openRoutine;
+        currentPage = "routines";
+        render();
+        return;
+      }
+      setPage("routines");
+    });
     const addButton = app.querySelector("[data-action='add-exercise']");
     if (addButton) addButton.addEventListener("click", addExercise);
     const imageButton = app.querySelector("[data-action='open-routine-image-picker']");
@@ -1547,7 +1639,11 @@
           if (existing) saveState();
           return;
         }
-        row[input.dataset.field] = input.value;
+        if (["reps", "set_count"].includes(input.dataset.field)) {
+          syncTemplateSetInputs(input.closest(".template-card"), row);
+        } else {
+          row[input.dataset.field] = input.value;
+        }
         saveState();
       });
     });
@@ -1772,6 +1868,16 @@
     render();
   }
 
+  function syncTemplateSetInputs(card, row) {
+    const countInput = card?.querySelector("[data-field='set_count']");
+    const repsInput = card?.querySelector("[data-field='reps']");
+    if (!countInput || !repsInput) return;
+    const count = Number(countInput.value);
+    if (!Number.isInteger(count) || count < 1 || count > 100) return;
+    const reps = repsInput.value.trim();
+    row.reps = reps ? `${count}x${reps}` : "";
+  }
+
   async function saveRoutineButton() {
     if (editMode) {
       syncEditFieldsFromDom();
@@ -1780,12 +1886,9 @@
       editMode = false;
       editSnapshot = null;
       state = workoutHistory.ensureHistoricalModel(state, { today: TODAY });
-      const activeSession = workoutHistory.todaySession(state, editedRoutine, TODAY);
-      if (activeSession) {
-        workoutHistory.syncWorkoutSessionWithRoutine(state, activeSession.id, { includeCompleted: true });
-        currentSessionId = activeSession.id;
-      }
       saveState();
+      currentPage = "routines";
+      selectedTemplateName = editedRoutine;
       render();
       if (!hasCloudIdentity()) {
         showToast(`${currentRoutine()} was updated in this browser.`);
@@ -1801,6 +1904,10 @@
     const session = currentWorkoutSession();
     workoutHistory.completeWorkoutSession(state, session.id);
     saveState();
+    clearOpenRoutine();
+    currentSessionId = null;
+    currentPage = "routines";
+    render();
     if (!hasCloudIdentity()) {
       showToast(`${currentRoutine()} was saved to this browser.`);
       return;
@@ -1818,8 +1925,10 @@
       const selectedExercise = findExistingExerciseByName(exercise);
       const invalidFields = [];
       if (!exercise || !selectedExercise || row.exercise_id !== selectedExercise.id) invalidFields.push("exercise");
-      if (String(row.weight ?? "").trim() === "") invalidFields.push("weight");
-      if (!reps) invalidFields.push("reps");
+      if (!isValidWeight(row.weight)) invalidFields.push("weight");
+      if (!workoutHistory.parseSetScheme(reps)[0].reps.trim()) invalidFields.push("reps");
+      const countInput = app.querySelector(`.template-card[data-index="${index}"] [data-field='set_count']`);
+      if (countInput && (!Number.isInteger(Number(countInput.value)) || Number(countInput.value) < 1 || Number(countInput.value) > 100)) invalidFields.push("set_count");
       if (invalidFields.length) {
         markInvalidFields(index, invalidFields);
         if (!firstInvalid) firstInvalid = { index, invalidFields };
@@ -1844,7 +1953,11 @@
         row.exercise = existing ? existing.name : "";
         return;
       }
-      row[input.dataset.field] = input.value;
+      if (["reps", "set_count"].includes(input.dataset.field)) {
+        syncTemplateSetInputs(input.closest(".template-card"), row);
+      } else {
+        row[input.dataset.field] = input.value;
+      }
     });
     currentRows().forEach((row) => {
       const exercise = String(row.exercise ?? "").trim();
@@ -2095,7 +2208,6 @@
       };
       saveState();
       currentPage = "routine";
-      rememberOpenRoutine(name);
       render();
     };
     create.addEventListener("click", createRoutine);
@@ -2714,7 +2826,23 @@
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Tab" && selectedTemplateName) {
+      const buttons = Array.from(app.querySelectorAll(".template-start-dialog button:not(:disabled)"));
+      const first = buttons[0];
+      const last = buttons[buttons.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    }
     if (event.key === "Escape") {
+      if (selectedTemplateName) {
+        selectedTemplateName = "";
+        render();
+      }
       const backdrop = document.getElementById("confirm-backdrop");
       if (!backdrop.hidden) document.getElementById("confirm-cancel").click();
       if (routineImagePickerOpen) {
@@ -2729,7 +2857,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=77", { updateViaCache: "none" })
+        .register("sw.js?v=78", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

@@ -929,6 +929,7 @@
     data.routine_logs = legacyLogs;
     legacyLogs.forEach((log, index) => addLegacySession(data, log, index));
     normalizeExerciseReferences(data);
+    initializeRoutineTemplates(data);
 
     const migratedAt = options.now ? nowIso(options.now) : data.migration_metadata.migrated_at || nowIso();
     const sourceCounts = {
@@ -981,31 +982,22 @@
     return data.workout_sets.filter((set) => set.workout_exercise_id === workoutExerciseId).sort(setSort);
   }
 
-  function copyExercisesFromSession(data, sourceSession, targetSessionId) {
-    exercisesForSession(data, sourceSession.id).forEach((sourceExercise, index) => {
-      const workoutExerciseId = randomId("wex");
-      data.workout_exercises.push({
-        id: workoutExerciseId,
-        workout_session_id: targetSessionId,
-        exercise_id: sourceExercise.exercise_id,
-        exercise_name: sourceExercise.exercise_name,
-        order: index + 1,
-        track_pb: boolFromData(sourceExercise.track_pb),
+  function initializeRoutineTemplates(data) {
+    if (data.routine_template_version === 1) return;
+    // Preserve set counts that older versions kept only in workout sessions.
+    Object.entries(data.routines).forEach(([name, rows]) => {
+      const previous = sessionsForRoutine(data, name).sort(sessionSortDesc)[0];
+      if (!previous) return;
+      const exercises = exercisesForSession(data, previous.id);
+      rows.forEach((row) => {
+        if (/^\d+\s*[x\u00d7]/i.test(row.reps)) return;
+        const exercise = exercises.find((item) => item.exercise_id === row.exercise_id);
+        const count = exercise ? setsForWorkoutExercise(data, exercise.id).length : 0;
+        if (count > 1) row.reps = `${count}x${row.reps}`;
       });
-      const sourceSets = setsForWorkoutExercise(data, sourceExercise.id);
-      const performedSets = sourceSets.filter((sourceSet) => boolFromData(sourceSet.completed));
-      (performedSets.length ? performedSets : sourceSets).forEach((sourceSet, setIndex) => {
-        data.workout_sets.push({
-          id: randomId("set"),
-          workout_exercise_id: workoutExerciseId,
-          set_number: setIndex + 1,
-          weight: sourceSet.weight,
-          reps: sourceSet.reps,
-          completed: false,
-          timestamp: "",
-        });
-      });
+      ensureRoutineDefinition(data, name, rows);
     });
+    data.routine_template_version = 1;
   }
 
   function seedExercisesFromRoutine(data, routine, targetSessionId) {
@@ -1038,79 +1030,13 @@
     });
   }
 
-  function syncWorkoutSessionWithRoutine(data, sessionId, options = {}) {
-    const session = data.workout_sessions.find((item) => item.id === sessionId);
-    if (!session || (session.status === "completed" && !options.includeCompleted)) return false;
-    const routine = data.routine_definitions.find((item) => item.id === session.routine_id) || routineByName(data, session.routine_name);
-    if (!routine) return false;
-    const templateExercises = (routine.exercises || []).filter((item) => item.active !== false);
-    const sessionExercises = exercisesForSession(data, sessionId);
-    const matchedWorkoutIds = new Set();
-    let changed = false;
-
-    templateExercises.forEach((routineExercise, index) => {
-      let workoutExercise = sessionExercises.find(
-        (item) => item.exercise_id === routineExercise.exercise_id && !matchedWorkoutIds.has(item.id)
-      );
-      if (!workoutExercise) {
-        const workoutExerciseId = randomId("wex");
-        const exercise = data.exercises.find((item) => item.id === routineExercise.exercise_id);
-        workoutExercise = {
-          id: workoutExerciseId,
-          workout_session_id: sessionId,
-          exercise_id: routineExercise.exercise_id,
-          exercise_name: exercise?.name || "Exercise",
-          order: index + 1,
-          track_pb: boolFromData(routineExercise.track_pb),
-        };
-        data.workout_exercises.push(workoutExercise);
-        sessionExercises.push(workoutExercise);
-        seedSetsFromRoutineExercise(data, workoutExercise.id, routineExercise);
-        changed = true;
-      } else {
-        const exercise = data.exercises.find((item) => item.id === routineExercise.exercise_id);
-        const nextName = exercise?.name || workoutExercise.exercise_name || "Exercise";
-        const nextOrder = index + 1;
-        const nextTrackPb = boolFromData(routineExercise.track_pb);
-        if (
-          workoutExercise.exercise_name !== nextName ||
-          Number(workoutExercise.order || 0) !== nextOrder ||
-          boolFromData(workoutExercise.track_pb) !== nextTrackPb
-        ) {
-          changed = true;
-        }
-        workoutExercise.exercise_name = nextName;
-        workoutExercise.order = nextOrder;
-        workoutExercise.track_pb = nextTrackPb;
-        if (!setsForWorkoutExercise(data, workoutExercise.id).length) {
-          seedSetsFromRoutineExercise(data, workoutExercise.id, routineExercise);
-          changed = true;
-        }
-      }
-      matchedWorkoutIds.add(workoutExercise.id);
-    });
-
-    sessionExercises
-      .filter((item) => !matchedWorkoutIds.has(item.id))
-      .forEach((item, index) => {
-        const nextOrder = templateExercises.length + index + 1;
-        if (Number(item.order || 0) !== nextOrder) changed = true;
-        item.order = nextOrder;
-      });
-    return changed;
-  }
-
   function startWorkoutSession(data, routineName, options = {}) {
-    const today = options.today || todayIso(options.now);
     const now = options.now ? nowIso(options.now) : nowIso();
     const routine = routineByName(data, routineName) || {
       id: ensureRoutineDefinition(data, routineName, data.routines?.[routineName] || []),
       name: routineName,
       exercises: data.routine_definitions.find((item) => item.name === routineName)?.exercises || [],
     };
-    const existingToday = todaySession(data, routineName, today);
-    if (existingToday) return existingToday;
-
     const session = {
       id: randomId("session"),
       routine_id: routine.id,
@@ -1121,13 +1047,7 @@
       notes: "",
     };
     data.workout_sessions.push(session);
-    const previous = latestCompletedSession(data, routineName, session.id);
-    if (previous) {
-      copyExercisesFromSession(data, previous, session.id);
-      syncWorkoutSessionWithRoutine(data, session.id);
-    } else {
-      seedExercisesFromRoutine(data, routine, session.id);
-    }
+    seedExercisesFromRoutine(data, routine, session.id);
     return session;
   }
 
@@ -1314,7 +1234,6 @@
     addWorkoutExercise,
     deleteWorkoutExercise,
     moveWorkoutExercise,
-    syncWorkoutSessionWithRoutine,
     completeWorkoutSession,
     syncRoutineLogFromSession,
     formatSets,

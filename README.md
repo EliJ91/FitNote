@@ -17,9 +17,11 @@ Then open `http://localhost:8080`.
 ## Features
 
 - Create, edit, delete, and select workout routines
-- Start today's workout from the most recent completed workout of the same routine
+- Select a routine template and press Start Workout to create an independent workout
+- Set template weights, set counts, and reps without changing active or completed workouts
 - Save actual individual workout sets with weight, reps, completion status, and timestamps
-- Reopen the same day's workout to add more sets later
+- Resume unfinished workouts across reloads and days
+- Tailor each workout's exercises and sets while preserving its routine template
 - Track weight, reps, completed sets, and PB-marked exercises
 - View routine and exercise trend graphs
 - View PB History beneath the graph
