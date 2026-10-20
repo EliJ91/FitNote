@@ -168,6 +168,7 @@ function assertCleanModel(data) {
   const template = JSON.stringify(data.routines);
   const definitions = JSON.stringify(data.routine_definitions);
   const workout = history.startWorkoutSession(data, "Chest Day", { now: new Date("2026-09-02T09:00:00Z") });
+  assert.strictEqual(workout.started_explicitly, true);
   const bench = rows(data, workout)[0];
   history.deleteWorkoutSet(data, bench.sets[4].id);
   history.deleteWorkoutSet(data, bench.sets[3].id);
@@ -175,6 +176,7 @@ function assertCleanModel(data) {
   bench.sets.slice(0, 3).forEach((set) => history.updateWorkoutSet(data, set.id, "completed", true));
   history.deleteWorkoutExercise(data, rows(data, workout)[1].workout_exercise_id);
   data = history.ensureHistoricalModel(JSON.parse(JSON.stringify(data)));
+  assert.strictEqual(data.workout_sessions.find((session) => session.id === workout.id).started_explicitly, true);
   assert.strictEqual(rows(data, workout).length, 1);
   assert.strictEqual(rows(data, workout)[0].sets.length, 3);
   assert.strictEqual(JSON.stringify(data.routines), template);

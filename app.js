@@ -9,7 +9,7 @@
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
   const OPEN_WORKOUT_KEY = `${STORAGE_KEY}.openWorkout`;
-  const APP_VERSION = "1.3.56";
+  const APP_VERSION = "1.3.57";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -78,6 +78,7 @@
   let currentPage = initialOpenRoutine ? "routine" : "home";
   let routinesSearchTerm = "";
   let selectedTemplateName = "";
+  let startingWorkout = false;
   let newRoutineNameDraft = "";
   let newRoutineImageId = "";
   let routineImagePickerOpen = false;
@@ -803,9 +804,17 @@
     return session || null;
   }
 
-  function unfinishedWorkout(routine) {
+  function workoutWasStarted(session) {
+    if (session.started_explicitly || session.id === localStorage.getItem(OPEN_WORKOUT_KEY)) return true;
+    const exerciseIds = new Set(state.workout_exercises
+      .filter((exercise) => exercise.workout_session_id === session.id)
+      .map((exercise) => exercise.id));
+    return state.workout_sets.some((set) => exerciseIds.has(set.workout_exercise_id) && boolFromData(set.completed));
+  }
+
+  function unfinishedWorkout(routine = "") {
     return state.workout_sessions
-      .filter((session) => session.routine_name === routine && session.status !== "completed")
+      .filter((session) => (!routine || session.routine_name === routine) && session.status === "active" && workoutWasStarted(session))
       .sort((a, b) => String(b.started_at).localeCompare(String(a.started_at)))[0] || null;
   }
 
@@ -818,7 +827,8 @@
     setPage("routine");
   }
 
-  function startSelectedWorkout() {
+  async function startSelectedWorkout() {
+    if (startingWorkout) return;
     const name = selectedTemplateName;
     if (!name || !state.routines[name]) return;
     if (!state.routines[name].length || state.routines[name].some((row) =>
@@ -827,8 +837,25 @@
       showToast("Finish the routine template before starting a workout.");
       return;
     }
-    const session = workoutHistory.startWorkoutSession(state, name);
-    openWorkout(session);
+    startingWorkout = true;
+    try {
+      const current = unfinishedWorkout();
+      if (current) {
+        const confirmed = await confirmDialog(
+          "Start a new workout?",
+          `Your current ${current.routine_name} workout and its unsaved progress will be forgotten. Start a new workout?`,
+          "Start New Workout"
+        );
+        if (!confirmed) return;
+      }
+      const previousDraftIds = state.workout_sessions.filter((item) => item.status === "active").map((item) => item.id);
+      const session = workoutHistory.startWorkoutSession(state, name);
+      previousDraftIds.forEach(deleteWorkoutSession);
+      clearOpenRoutine();
+      openWorkout(session);
+    } finally {
+      startingWorkout = false;
+    }
   }
 
   function currentWorkoutRows() {
@@ -1255,7 +1282,7 @@
           </ul>
           <div class="template-start-actions">
             <button class="btn btn-primary" type="button" data-action="start-template-workout">${iconSvg("play")}<span>Start Workout</span></button>
-            ${draft ? `<button class="btn btn-secondary" type="button" data-action="resume-template-workout">${iconSvg("openNotebook")}<span>Resume Workout</span></button>` : ""}
+            ${draft ? `<button class="btn btn-secondary" type="button" data-action="resume-template-workout">${iconSvg("openNotebook")}<span>Continue Workout</span></button>` : ""}
           </div>
         </section>
       </div>
@@ -2857,7 +2884,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=78", { updateViaCache: "none" })
+        .register("sw.js?v=79", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

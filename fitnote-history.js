@@ -684,6 +684,7 @@
         started_at: session.started_at || "",
         completed_at: session.completed_at || "",
         status: session.status || "active",
+        ...(boolFromData(session.started_explicitly) ? { started_explicitly: true } : {}),
         notes: session.notes || "",
       }));
     const sessionIds = new Set(data.workout_sessions.map((session) => session.id));
@@ -1044,6 +1045,7 @@
       started_at: now,
       completed_at: "",
       status: "active",
+      started_explicitly: true,
       notes: "",
     };
     data.workout_sessions.push(session);
