@@ -853,6 +853,38 @@ button.is-pressing:not([disabled]) {
   text-align: center;
 }
 
+.startup-screen {
+  grid-template-rows: 1fr;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.startup-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  animation: startup-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes startup-glow {
+  0%, 100% {
+    opacity: 0.88;
+    filter: drop-shadow(0 0 3px rgba(34, 199, 109, 0.1));
+  }
+  50% {
+    opacity: 1;
+    filter: drop-shadow(0 0 14px rgba(34, 199, 109, 0.32));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .startup-logo {
+    animation: none;
+    filter: drop-shadow(0 0 6px rgba(34, 199, 109, 0.2));
+  }
+}
+
 .auth-screen {
   grid-template-rows: 1fr;
   padding: max(34px, env(safe-area-inset-top)) 28px max(28px, env(safe-area-inset-bottom));

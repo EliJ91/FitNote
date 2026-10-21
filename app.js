@@ -9,7 +9,7 @@
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
   const OPEN_WORKOUT_KEY = `${STORAGE_KEY}.openWorkout`;
-  const APP_VERSION = "1.3.58";
+  const APP_VERSION = "1.3.59";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -86,7 +86,7 @@
   let editMode = false;
   let editSnapshot = null;
   let guestMode = localStorage.getItem(GUEST_MODE_KEY) === "true" || localStorage.getItem(LEGACY_GUEST_MODE_KEY) === "true";
-  let authReady = true;
+  let authReady = !(canAttemptCloud && (hasStoredSupabaseSession() || hasAuthRedirectParams()));
   let cloudSaveTimer = null;
   let cloudLoadActive = false;
   let cloudStatus = canAttemptCloud ? "Browser storage only" : "Local only";
@@ -726,7 +726,6 @@
     try {
       const { data } = await withTimeout(client.auth.getSession(), AUTH_CHECK_TIMEOUT_MS, "Auth check timed out");
       authSession = data.session;
-      authReady = true;
       if (authSession) {
         guestMode = false;
         localStorage.removeItem(GUEST_MODE_KEY);
@@ -734,8 +733,9 @@
         await loadCloudData();
       } else {
         cloudStatus = "Browser storage only";
-        render();
       }
+      authReady = true;
+      render();
       client.auth.onAuthStateChange((_event, session) => {
         authSession = session;
         authReady = true;
@@ -1022,15 +1022,15 @@
     `;
   }
 
+  function renderStartupScreen() {
+    return `
+      <section class="screen startup-screen" role="status" aria-label="Opening FitNote" aria-busy="true">
+        <img class="startup-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
+      </section>
+    `;
+  }
+
   function renderAuthGate() {
-    if (!authReady) {
-      return authShell(`
-        <section class="auth-panel">
-          <img class="auth-logo" src="icons/fitnote-landing-logo.png" alt="FitNote">
-          <p class="auth-copy">Checking sign in...</p>
-        </section>
-      `);
-    }
     return authShell(`
         <section class="auth-panel">
           <img class="auth-logo" src="icons/fitnote-landing-logo.png" alt="FitNote">
@@ -1046,6 +1046,10 @@
 
   function render() {
     applyAppShellClass();
+    if (!authReady) {
+      app.innerHTML = renderStartupScreen();
+      return;
+    }
     if (!canEnterApp()) {
       closeEditMode(false);
       app.innerHTML = renderAuthGate();
@@ -2884,7 +2888,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=80", { updateViaCache: "none" })
+        .register("sw.js?v=81", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });

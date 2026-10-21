@@ -7,10 +7,14 @@
     <title>FitNote</title>
     <link rel="icon" href="icons/fitnote-app-logo.png" type="image/png">
     <link rel="manifest" href="manifest.webmanifest">
-    <link rel="stylesheet" href="styles.css?v=80">
+    <link rel="stylesheet" href="styles.css?v=81">
   </head>
   <body>
-    <div id="app" class="app-shell"></div>
+    <div id="app" class="app-shell">
+      <section class="screen startup-screen" role="status" aria-label="Opening FitNote" aria-busy="true">
+        <img class="startup-logo" src="icons/fitnote-app-logo.png" alt="FitNote">
+      </section>
+    </div>
 
     <input id="import-file" class="visually-hidden" type="file" accept="application/json,.json">
 
@@ -28,8 +32,8 @@
     <div id="toast" class="toast" aria-live="polite"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script src="fitnote-config.js?v=80" defer></script>
-    <script src="fitnote-history.js?v=80" defer></script>
-    <script src="app.js?v=80" defer></script>
+    <script src="fitnote-config.js?v=81" defer></script>
+    <script src="fitnote-history.js?v=81" defer></script>
+    <script src="app.js?v=81" defer></script>
   </body>
 </html>

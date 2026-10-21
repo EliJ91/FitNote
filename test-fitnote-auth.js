@@ -6,23 +6,26 @@ const history = require("./fitnote-history");
 
 const sessionKey = "sb-test-project-auth-token";
 
-function authHarness() {
-  const storage = new Map([[sessionKey, "saved-session"]]);
+function authHarness(options = {}) {
+  const storage = new Map(options.storedSession === false ? [] : [[sessionKey, "saved-session"]]);
   const timers = [];
+  const renders = [];
+  let markup = "";
   const node = {
-    innerHTML: "",
+    get innerHTML() { return markup; },
+    set innerHTML(value) { markup = value; renders.push(value); },
     addEventListener() {},
     querySelector() { return null; },
     querySelectorAll() { return []; },
     classList: { add() {}, remove() {} },
   };
-  let healthStatus = 503;
+  let healthStatus = options.healthStatus ?? 503;
   let oauthOptions = null;
   let clientsCreated = 0;
   const window = {
     FITNOTE_SUPABASE: { url: "https://test-project.supabase.co", anonKey: "public-key" },
     FitNoteHistory: history,
-    location: { origin: "https://elij91.github.io", pathname: "/FitNote/", search: "", hash: "" },
+    location: { origin: "https://elij91.github.io", pathname: "/FitNote/", search: options.callback ? "?code=test" : "", hash: "" },
     setTimeout(callback, delay) { timers.push(delay); return timers.length; },
     clearTimeout() {},
     addEventListener() {},
@@ -32,6 +35,16 @@ function authHarness() {
         return {
           auth: {
             async signInWithOAuth(options) { oauthOptions = options; return { error: null }; },
+            getSession: options.getSession || (async () => ({ data: { session: null } })),
+            onAuthStateChange() {},
+          },
+          from() {
+            return {
+              select() { return this; },
+              eq() { return this; },
+              maybeSingle: options.loadCloud || (async () => ({ data: null, error: null })),
+              async upsert() { return { error: null }; },
+            };
           },
         };
       },
@@ -53,13 +66,15 @@ function authHarness() {
   });
   const source = fs.readFileSync(require.resolve("./app.js"), "utf8").replace(
     "  initCloudAuth();",
-    "  window.testAuth = { signInWithGoogle, renderAuthGate, cloudMenu, prepareCloudClient };"
+    "  window.testAuth = { signInWithGoogle, renderAuthGate, cloudMenu, prepareCloudClient, initCloudAuth };"
   );
   vm.runInContext(source, context);
   return {
     api: window.testAuth,
     storage,
     timers,
+    renders,
+    get rendered() { return markup; },
     setHealth(status) { healthStatus = status; },
     get oauthOptions() { return oauthOptions; },
     get clientsCreated() { return clientsCreated; },
@@ -94,4 +109,50 @@ test("an unauthorized health response does not start OAuth", async () => {
   await harness.api.signInWithGoogle();
   assert.equal(harness.clientsCreated, 0);
   assert.equal(harness.oauthOptions, null);
+});
+
+test("returning users see the splash until sign-in and initial cloud loading finish", async () => {
+  let finishCloudLoad;
+  let notifyCloudLoad;
+  const cloudLoad = new Promise((resolve) => { finishCloudLoad = resolve; });
+  const cloudStarted = new Promise((resolve) => { notifyCloudLoad = resolve; });
+  const harness = authHarness({
+    healthStatus: 200,
+    getSession: async () => ({ data: { session: { user: { id: "test-user", email: "test@example.com" } } } }),
+    loadCloud: () => { notifyCloudLoad(); return cloudLoad; },
+  });
+  assert.match(harness.rendered, /startup-logo/);
+  const initialization = harness.api.initCloudAuth();
+  await cloudStarted;
+  assert.match(harness.rendered, /startup-logo/);
+  finishCloudLoad({ data: null, error: null });
+  await initialization;
+  assert.match(harness.rendered, /Welcome back/);
+  assert.ok(harness.renders.every((html) => !html.includes('data-action="sign-in-google"')));
+});
+
+test("expired sessions show login only after checking the saved session", async () => {
+  let finishSessionCheck;
+  const sessionCheck = new Promise((resolve) => { finishSessionCheck = resolve; });
+  const harness = authHarness({ healthStatus: 200, getSession: () => sessionCheck });
+  const initialization = harness.api.initCloudAuth();
+  assert.match(harness.rendered, /startup-logo/);
+  assert.doesNotMatch(harness.rendered, /sign-in-google/);
+  finishSessionCheck({ data: { session: null } });
+  await initialization;
+  assert.match(harness.rendered, /sign-in-google/);
+  assert.doesNotMatch(harness.rendered, /startup-logo/);
+});
+
+test("new visitors reach login without waiting for a cloud check", async () => {
+  const harness = authHarness({ storedSession: false });
+  assert.match(harness.rendered, /sign-in-google/);
+  await harness.api.initCloudAuth();
+  assert.equal(harness.clientsCreated, 0);
+});
+
+test("Google callbacks show the splash even without an existing saved session", () => {
+  const harness = authHarness({ storedSession: false, callback: true });
+  assert.match(harness.rendered, /startup-logo/);
+  assert.doesNotMatch(harness.rendered, /sign-in-google/);
 });
