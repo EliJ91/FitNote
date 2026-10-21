@@ -9,7 +9,7 @@
   const LEGACY_GUEST_MODE_KEY = `${LEGACY_STORAGE_KEY}.guestMode`;
   const OPEN_ROUTINE_KEY = `${STORAGE_KEY}.openRoutine`;
   const OPEN_WORKOUT_KEY = `${STORAGE_KEY}.openWorkout`;
-  const APP_VERSION = "1.3.57";
+  const APP_VERSION = "1.3.58";
   const TODAY = new Date().toISOString().slice(0, 10);
   const SUPABASE_TABLE = "fitnote_data";
   const LEGACY_SUPABASE_TABLE = "workout_planner_data";
@@ -843,7 +843,7 @@
       if (current) {
         const confirmed = await confirmDialog(
           "Start a new workout?",
-          `Your current ${current.routine_name} workout and its unsaved progress will be forgotten. Start a new workout?`,
+          "Your current workout and its unsaved progress will be forgotten. Start a new workout?",
           "Start New Workout"
         );
         if (!confirmed) return;
@@ -2884,7 +2884,7 @@
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
       navigator.serviceWorker
-        .register("sw.js?v=79", { updateViaCache: "none" })
+        .register("sw.js?v=80", { updateViaCache: "none" })
         .then((registration) => registration.update())
         .catch(() => {});
     });
